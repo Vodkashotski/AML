@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import ydata_profiling as yp
+from pandas import read_csv
+from pandas.plotting import scatter_matrix
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -14,4 +17,13 @@ def importData(set):
 
 
 df = importData("test_FD001.txt")
-print(df)
+
+print(df.isna().sum())
+
+
+# profile = yp.ProfileReport(df)
+
+# profile.to_file("output.html")
+
+
+
