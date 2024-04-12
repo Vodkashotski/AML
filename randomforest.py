@@ -63,6 +63,8 @@ print(high_corr_indices)
 too_much_corr = [train.columns[5], train.columns[6], train.columns[12]] #dropped the ones with the lowest correlation to RUL
 train=train.drop(too_much_corr, axis=1)
 
+target_set = train.iloc[:,-1]
+data_set = train.iloc[:,1:-1]
 
-
-
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.3, random_state=42)
