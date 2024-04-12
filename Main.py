@@ -1,8 +1,22 @@
-import numpy as np
+
+
 import pandas as pd
-import ydata_profiling as yp
-from pandas import read_csv
-from pandas.plotting import scatter_matrix
+import numpy as np
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+
+
+
+pd.set_option('display.max_columns', None)  # or 1000
+pd.set_option('display.max_rows', None)  # or 1000
+pd.set_option('display.max_colwidth', None)  # or 199
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -16,14 +30,31 @@ def importData(set):
     return df
 
 
-df = importData("test_FD001.txt")
+df = importData("train_FD003.txt")
+df.drop(["sensor measurement 22","sensor measurement 23"], axis='columns', inplace=True)
 
-print(df.isna().sum())
+# print(df.describe().T)
+plt.figure(figsize=(10,6))
+sns.heatmap(df.isna().transpose(),
+            cmap = sns.diverging_palette(230, 20, as_cmap=True),
+            cbar_kws={'label': 'Missing Data'})
+
+corr = df.corr()
+mask = np.triu(np.ones_like(corr, dtype=bool))
+f, ax = plt.subplots(figsize=(10, 6))
+cmap = sns.diverging_palette(230, 20, as_cmap=True)
+sns.heatmap(corr,mask=mask, cmap=cmap, vmax=.3, center=0,
+            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+plt.show()
+
+df.drop(["operational setting 1", "operational setting 2", "operational setting 3", "sensor measurement 1", "sensor measurement 5", "sensor measurement 16", "sensor measurement 18", "sensor measurement 19", "sensor measurement 21"],
+         axis='columns', inplace=True)
+# target = pd.read_csv("AML\Data\RUL_FD003.txt")
 
 
-# profile = yp.ProfileReport(df)
 
-# profile.to_file("output.html")
+
+
 
 
 
