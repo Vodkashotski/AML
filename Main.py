@@ -49,6 +49,13 @@ def importData(set):
     data.columns = Header
     return data
 
+def add_RUL_column(df):
+    train_grouped_by_unit = df.groupby(by='unit') 
+    max_time = train_grouped_by_unit['time'].max()
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit',right_index=True)
+    merged["RUL"] = merged["max_time"] - merged['time']
+    merged = merged.drop("max_time", axis=1)
+    return merged
 
 data = importData("train_FD003.txt")
 
