@@ -41,15 +41,16 @@ train=train.drop(to_drop, axis=1)
 
 corr=train.corr()
 
-fig=pyplot.figure(figsize=(10,5))
-ax=fig.add_subplot(111)
-cax = ax.matshow(corr, vmin=-1, vmax=1)
-fig.colorbar(cax)
-ax.set_xticks(np.arange(15))
-ax.set_xticklabels(train.columns, rotation=90, fontsize=15)
-ax.set_yticks(np.arange(15))
-ax.set_yticklabels(train.columns, fontsize=15)
-pyplot.show()
+#fig=pyplot.figure(figsize=(10,5))
+#ax=fig.add_subplot(111)
+#cax = ax.matshow(corr, vmin=-1, vmax=1)
+#fig.colorbar(cax)
+#ax.set_xticks(np.arange(15))
+#ax.set_xticklabels(train.columns, rotation=90, fontsize=15)
+#ax.set_yticks(np.arange(15))
+#ax.set_yticklabels(train.columns, fontsize=15)
+#pyplot.show()
+
 #by examination some seem to have a too close correlation, so we will drop some of them
 
 high_corr_indices = []
@@ -67,4 +68,22 @@ target_set = train.iloc[:,-1]
 data_set = train.iloc[:,1:-1]
 
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
 X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.3, random_state=42)
+
+#print(y_train.shape)
+
+rf = RandomForestRegressor(random_state=42)
+param_grid={'n_estimators': [200, 225, 250], 'max_depth': [9, 10, 11]}
+grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
+
+grid.fit(X_train, y_train)
+scores = pd.DataFrame(grid.cv_results_)
+
+print(grid.best_params_)
+print(grid.best_score_)
+
+best_rf = grid.best_estimator_
+test_score = best_rf.score(X_test, y_test)
+print(test_score)
