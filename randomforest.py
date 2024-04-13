@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -34,14 +34,15 @@ print(relation_to_RUL)
 
 to_drop = []
 for index, value in relation_to_RUL.items():
-    if abs(value) < 0.1:
+    if abs(value) < 0.2:
         to_drop.append(index)
 
 train=train.drop(to_drop, axis=1)
 
 corr=train.corr()
+print(corr.iloc[:,-1])
 
-#fig=pyplot.figure(figsize=(10,5))
+#fig=plt.figure(figsize=(10,5))
 #ax=fig.add_subplot(111)
 #cax = ax.matshow(corr, vmin=-1, vmax=1)
 #fig.colorbar(cax)
@@ -49,7 +50,7 @@ corr=train.corr()
 #ax.set_xticklabels(train.columns, rotation=90, fontsize=15)
 #ax.set_yticks(np.arange(15))
 #ax.set_yticklabels(train.columns, fontsize=15)
-#pyplot.show()
+#plt.show()
 
 #by examination some seem to have a too close correlation, so we will drop some of them
 
@@ -61,25 +62,34 @@ for i in range(len(corr)):
             
 print(high_corr_indices)
 #code above shows for which values the correlation is too high
-too_much_corr = [train.columns[5], train.columns[6], train.columns[12]] #dropped the ones with the lowest correlation to RUL
+too_much_corr = [train.columns[5], train.columns[11], train.columns[12]] #dropped the ones with the lowest correlation to RUL
 train=train.drop(too_much_corr, axis=1)
-
-target_set = train.iloc[:,-1]
-data_set = train.iloc[:,1:-1]
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
+
+target_set = train.iloc[:,-1]
+data_set = train.iloc[:,1:-1]
+
 X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.3, random_state=42)
 
-#print(y_train.shape)
-
 rf = RandomForestRegressor(random_state=42)
-param_grid={'n_estimators': [200, 225, 250], 'max_depth': [9, 10, 11]}
+param_grid={'n_estimators': [200, 250, 300, 350], 'max_depth': [10, 11, 12, 13]}
 grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
 grid.fit(X_train, y_train)
 scores = pd.DataFrame(grid.cv_results_)
+
+n_estimators = [200, 250, 300, 350]
+max_depth = 10
+scores = scores[scores['param_max_depth'] == max_depth]
+scores = scores[scores['param_n_estimators'].isin(n_estimators)]
+plt.plot(scores['param_n_estimators'], scores['mean_test_score'])
+plt.xlabel('n_estimators')
+plt.ylabel('Mean Test Score')
+plt.title('Mean Test Score vs n_estimators (max_depth=10)')
+plt.show()
 
 print(grid.best_params_)
 print(grid.best_score_)
