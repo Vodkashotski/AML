@@ -15,39 +15,9 @@ def transformData(data):
                 's14','s15','s16','s17','s18','s19','s20','s21']
     df.columns = header
 
-    corr = df.corr()
-
-    #Drop columns with low or NaN correlation
-    # Set threshold for highly correlated features
-    threshold = 0.8
-
-    # Find pairs of highly correlated features
-    highly_correlated = (corr.abs() > threshold) & (corr.abs() < 1.0)
-
-    # Get indices of highly correlated features
-    correlated_indices = pd.DataFrame(highly_correlated.unstack())
-    correlated_indices = correlated_indices[correlated_indices[0]].index.tolist()
-
-    # Remove duplicates and self-correlations
-    correlated_indices = set([(i[0], i[1]) if i[0] < i[1] 
-                            else 
-                            (i[1], i[0]) for i in correlated_indices])
-
-    # Identify features to remove (optional)
-    #features_to_remove = [feat[1] for feat in correlated_indices]
-
-    # Remove features from the dataset (optional)
-    #df = df.drop(columns=features_to_remove)
     # Removes settings and NaN correlated features
     df = df.drop(columns=['setting1', 'setting2', 'setting3', 's01', 
                      's05', 's10', 's16', 's18', 's19'])
-
-    corr = df.corr()
-
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
-    plt.title('Correlation Heatmap')
-    plt.show()
 
     # Finding the end of life of each engine unit
     EOL = []
@@ -97,6 +67,32 @@ def importRUL(rul):
     RUL = RUL.values
     return RUL
 
+def checkCorr(df):
+    corr = df.corr()
+
+    #Drop columns with low or NaN correlation
+    # Set threshold for highly correlated features
+    threshold = 0.7
+
+    # Find pairs of highly correlated features
+    highly_correlated = (corr.abs() > threshold) & (corr.abs() < 1.0)
+
+    # Get indices of highly correlated features
+    correlated_indices = pd.DataFrame(highly_correlated.unstack())
+    correlated_indices = correlated_indices[correlated_indices[0]].index.tolist()
+
+    # Remove duplicates and self-correlations
+    correlated_indices = set([(i[0], i[1]) if i[0] < i[1] 
+                            else 
+                            (i[1], i[0]) for i in correlated_indices])
+
+    # Identify features to remove (optional)
+    features_to_remove = [feat[1] for feat in correlated_indices]
+
+    # Remove features from the dataset (optional)
+    df = df.drop(columns=features_to_remove)
+    return df, features_to_remove
+
 set_number = 'FD001'
 
 # Define the filenames and function calls using string formatting
@@ -111,14 +107,42 @@ y_true = importRUL(rul_filename)
 X, y = transformData(train_filename)
 X_test, y_test = transformData(test_filename)
 
-X_train_def, X_val_def, y_train_def, y_val_def = train_test_split(X, y, test_size=0.3, random_state=7) 
+# Removing features with high correlation
+X = pd.DataFrame(X)
+X, features_to_remove = checkCorr(X)
+X_test = pd.DataFrame(X_test)
+X_test = X_test.drop(columns=features_to_remove)
+
+X_train_def, X_val_def, y_train_def, y_val_def = train_test_split(X, y, test_size=0.3, random_state=42)
 
 #scaler = StandardScaler()
 #X_train_def_scaled = scaler.fit_transform(X_train_def)
 #X_val_def_scaled = scaler.transform(X_val_def)
+#X_test_scaled = scaler.transform(X_test)
 
 # Initialize the SVR model
 model = SVR(kernel='rbf')  # You can specify other kernels like 'linear', 'poly', 'sigmoid', etc.
+
+# Define the parameter grid
+param_grid = {
+    'kernel': ['linear', 'poly', 'rbf'],
+    'C': [0.1, 1, 10],
+    'gamma': ['scale', 'auto']
+}
+
+# Create the GridSearchCV object
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
+
+# Fit the GridSearchCV object to the data
+grid_search.fit(X_train_def, y_train_def)
+
+# Access the best model and its parameters
+best_svr = grid_search.best_estimator_
+best_params = grid_search.best_params_
+best_score = grid_search.best_score_
+
+print("Best Parameters:", best_params)
+print("Best Score (Negative MSE):", best_score)
 
 # Fit the SVR model to the training data
 model.fit(X_train_def, y_train_def)
@@ -126,11 +150,11 @@ model.fit(X_train_def, y_train_def)
 # Predict the target variable on the validation set
 y_val_pred = model.predict(X_val_def)
 
-print('Validation score: \n')
+print('Validation score:')
 score_func(y_val_def, y_val_pred)
 
 # Predict the target variable on the test set
 y_pred = model.predict(X_test)
 
-print('Test score: \n')
+print('Test score:')
 score_func(y_pred, y_test)
