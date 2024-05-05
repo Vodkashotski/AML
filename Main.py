@@ -61,7 +61,7 @@ def add_RUL_column(df):
 data = importData("train_FD003.txt")
 
 #dropped because of missing values
-data.drop(["sensor measurement 22","sensor measurement 23"], axis='columns', inplace=True)
+data.drop(["sensor measurement 22","sensor measurement 23"], axis='columns', inplace=True) #jeg tror ikke de her sensorer eksiterer, der er kun 26 kolonner i dataen
 
 #dropped because of correlation
 data.drop(["operational setting 1", "operational setting 2", "operational setting 3", "sensor measurement 1", "sensor measurement 5", "sensor measurement 16", "sensor measurement 18", "sensor measurement 19", "sensor measurement 21"],
