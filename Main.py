@@ -25,6 +25,7 @@ def score_func(y_true,y_pred):
         y_true = true target RUL value
         y_pred = predicted target RUL value
     """
+    
     mae = mean_absolute_error(y_true, y_pred)
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     r2 = r2_score(y_true, y_pred)

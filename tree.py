@@ -1,12 +1,16 @@
+
 from textwrap import fill
+from matplotlib.pylab import RandomState
 import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
 
+import sklearn
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from sklearn import tree
+import sklearn.preprocessing
 
 #Display option for outputting big datasets
 pd.set_option('display.max_columns', None)  # or 1000
@@ -61,28 +65,75 @@ testset_path =r"C:\Users\Simon\Documents\Code projects\AML\Data\test_FD003.txt"
 X_test, y_test = transform_df(testset_path)
 
 '''
-!Grid search CV code to find the best parameters. Code takes a while to run so it is commented out.
+# !Grid search CV code to find the best parameters. Code takes a while to run so it is commented out.
 
-print(f"Dimension of feature matrix : {X_train.shape}\ndimension of target vector: {y_train.shape}")
+print(f"Dimension of feature matrix : {X_train.shape}\n Dimension of target vector: {y_train.shape}")
 
-param_grid = {'max_depth':range(2, 20), 'min_samples_split':range(10, 100, 10)}
+param_grid = {'max_depth':range(1, 12, 1),'min_samples_split':range(1, 150, 5), 'min_samples_leaf':range(1, 50,5)}
 
-grid = GridSearchCV(tree.DecisionTreeClassifier(random_state=0), param_grid=param_grid, cv=None, return_train_score=True)
-grid.fit(X_train, y_train)
+# grid = GridSearchCV(tree.DecisionTreeClassifier(random_state=0), param_grid=param_grid, cv=None, return_train_score=True)
+# grid.fit(X_train, y_train)
 
-scores = pd.DataFrame(grid.cv_results_)
-print(" Results from Grid Search " )
-print("\n The best estimator across ALL searched params:\n",grid.best_estimator_)
-print("\n The best score across ALL searched params:\n",grid.best_score_)
-print("\n The best parameters across ALL searched params:\n",grid.best_params_)
-'''
-clf = tree.DecisionTreeClassifier(max_depth=8, min_samples_split=10k)
-plt.figure(figsize=(50,45), dpi=300)
+rand_search = RandomizedSearchCV(estimator= tree.DecisionTreeClassifier(random_state=0), param_distributions=param_grid, cv=None, return_train_score=True, n_jobs=-1)
+rand_search.fit(X_train, y_train)
 
-clf.fit(X_train, y_train)
+scores = pd.DataFrame(rand_search.cv_results_)
 
-tree.plot_tree(clf, filled=True, fontsize=2)
-print(clf.score(X_test, y_test))
-print(clf.score(X_train, y_train))
+# print(scores)
+
+# scores.plot(x='param_max_depth', y='mean_train_score', yerr='std_train_score', ax=plt.gca(), figsize=(20,5))
+# scores.plot(x='param_max_depth', y='mean_test_score', yerr='std_test_score', ax=plt.gca(), figsize=(20,5))
+# plt.tick_params(axis='x', labelsize=20)
+# plt.tick_params(axis='y', labelsize=20)
+# plt.xlabel('max_depth', fontsize=26)
+# plt.legend(fontsize=18)
 
 # plt.show()
+
+# scores.plot(x='param_min_samples_split', y='mean_train_score', yerr='std_train_score', ax=plt.gca(), figsize=(20,5))
+# scores.plot(x='param_min_samples_split', y='mean_test_score', yerr='std_test_score', ax=plt.gca(), figsize=(20,5))
+# plt.tick_params(axis='x', labelsize=20)
+# plt.tick_params(axis='y', labelsize=20)
+# plt.xlabel('min_samples_split', fontsize=26)
+# plt.legend(fontsize=18)
+
+# plt.show()
+
+
+
+print(" Results from {} " .format(rand_search.__class__))
+print("\n The best estimator across ALL searched params:\n",rand_search.best_estimator_)
+print("\n The best score across ALL searched params:\n",rand_search.best_score_)
+print("\n The best parameters across ALL searched params:\n",rand_search.best_params_)
+# '''
+
+scaler = sklearn.preprocessing.StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+clf = tree.DecisionTreeClassifier(max_depth=10, min_samples_split=146,min_samples_leaf=31 ,random_state=1)
+
+
+# plt.figure(figsize=(10,8), dpi=300)
+
+
+clf.fit(X_train_scaled, y_train)
+
+feat_importance = clf.feature_importances_
+feat_importance = np.sort(feat_importance)
+
+#drop unimportant features
+
+plt.barh(range(np.size(feat_importance)), feat_importance)
+
+y_pred = clf.predict(X_test_scaled)
+
+# tree.plot_tree(clf, filled=True, fontsize=5)
+
+print("Test score: {:.2f}" .format(clf.score(X_test_scaled, y_test)))
+print("Train score: {:.2f}".format(clf.score(X_train_scaled, y_train)))
+
+
+plt.show()
+
