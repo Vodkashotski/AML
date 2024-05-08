@@ -9,7 +9,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    df = pd.read_csv("AML/Data/{}" .format(set), header=None, delimiter=" ", usecols=range(26))
+    df = pd.read_csv("AML/Data/{}" .format(set), header=None, delim_whitespace=True)
     df.columns = Header
     return df
 
@@ -75,20 +75,20 @@ from sklearn import tree
 target_set = train.iloc[:,-1]
 data_set = train.iloc[:,1:-1]
 
-X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.25, random_state=0)
-feature_range = range(1, X_train.shape[1])
-n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
-depth_range = range(10, 14)
+#X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.25, random_state=0)
+#feature_range = range(1, X_train.shape[1])
+#n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
+#depth_range = range(10, 14)
 
-rf = RandomForestRegressor(random_state=42)
-param_grid={'n_estimators': n_estimator_range,
-            'max_depth': depth_range,
-            'max_features': feature_range
-            }
-grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
+#rf = RandomForestRegressor(random_state=42)
+#param_grid={'n_estimators': n_estimator_range,
+#            'max_depth': depth_range,
+#            'max_features': feature_range
+#            }
+#grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
-grid.fit(X_train, y_train)
-scores = pd.DataFrame(grid.cv_results_)
+#grid.fit(X_train, y_train)
+#scores = pd.DataFrame(grid.cv_results_)
 
 #n_estimators = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
 #max_depth = 10
@@ -100,18 +100,18 @@ scores = pd.DataFrame(grid.cv_results_)
 #plt.title('Mean Test Score vs n_estimators (max_depth=10)')
 #plt.show()
 
-print(grid.best_params_)
-print(grid.best_score_)
+#print(grid.best_params_)
+#print(grid.best_score_)
 
 #best_rf = grid.best_estimator_
 #test_score = best_rf.score(X_test, y_test)
 #print(test_score)
 
-rf = RandomForestRegressor(random_state=0, n_estimators=350, max_depth=12)
+#rf = RandomForestRegressor(random_state=0, n_estimators=350, max_depth=12)
 
-rf.fit(X_train, y_train)
+#rf.fit(X_train, y_train)
 
 #cv_score_train = cross_val_score(rf, X_train, y_train, cv=5)
-cv_score_test = cross_val_score(rf, X_test, y_test, cv=5)
+#cv_score_test = cross_val_score(rf, X_test, y_test, cv=5)
 #print("Train score:", cv_score_train.mean())
-print("Test score:", cv_score_test.mean())
+#print("Test score:", cv_score_test.mean())
