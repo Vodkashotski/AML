@@ -18,7 +18,7 @@ pd.set_option('display.max_rows', None)  # or 1000
 pd.set_option('display.max_colwidth', None)  # or 199
 
 
-def transform_df(file_path):
+def transform_df(file_path, returndf=False):
     #!This function generelises the data processing done in main.py, the specified columns in coloumns_to_drop is
     #!      determined by prior data analysis
     # Read CSV file into a DataFrame
@@ -31,7 +31,7 @@ def transform_df(file_path):
     df.columns = column_names
     # Drop specified columns
     columns_to_drop = ["s19", "s18", "s16", "s05", "s01", "setting3",
-                       "setting1", "setting2", "s21"]
+                       "setting1", "setting2", "s21",'s07', 's15', 's12', 's10']
     df = df.drop(columns=columns_to_drop, axis=1)
 
     # Making an array which contains EOL of all the Ids
@@ -55,14 +55,21 @@ def transform_df(file_path):
     X_train = df.drop(["label"], axis=1).values
     y_train = df["label"] 
 
+    scaler = sklearn.preprocessing.StandardScaler()
+
+    X_train = scaler.fit_transform(X_train)
+
+    if returndf == True:
+        return df, X_train, y_train
+
     return X_train, y_train
 
 trainset_path = r"C:\Users\Simon\Documents\Code projects\AML\Data\train_FD003.txt"
-X_train, y_train = transform_df(trainset_path)
+df, X_train, y_train = transform_df(trainset_path, returndf= True)
 # print(f"Dimension of feature matrix : {X_train.shape}\ndimension of target vector: {y_train.shape}")
 
 testset_path =r"C:\Users\Simon\Documents\Code projects\AML\Data\test_FD003.txt"
-X_test, y_test = transform_df(testset_path)
+df_test, X_test, y_test = transform_df(testset_path, returndf=True)
 
 '''
 # !Grid search CV code to find the best parameters. Code takes a while to run so it is commented out.
@@ -107,10 +114,8 @@ print("\n The best score across ALL searched params:\n",rand_search.best_score_)
 print("\n The best parameters across ALL searched params:\n",rand_search.best_params_)
 # '''
 
-scaler = sklearn.preprocessing.StandardScaler()
 
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+
 
 clf = tree.DecisionTreeClassifier(max_depth=10, min_samples_split=146,min_samples_leaf=31 ,random_state=1)
 
@@ -118,21 +123,37 @@ clf = tree.DecisionTreeClassifier(max_depth=10, min_samples_split=146,min_sample
 # plt.figure(figsize=(10,8), dpi=300)
 
 
-clf.fit(X_train_scaled, y_train)
+clf.fit(X_train, y_train)
 
 feat_importance = clf.feature_importances_
-feat_importance = np.sort(feat_importance)
+# feat_importance = np.sort(feat_importance) #! this should never be sorted unless the coloumns can be sorted with it
 
-#drop unimportant features
+
 
 plt.barh(range(np.size(feat_importance)), feat_importance)
+plt.yticks(range(np.size(feat_importance)),df.columns.tolist()[0:np.size(feat_importance)])
 
-y_pred = clf.predict(X_test_scaled)
+nonimp_feats = ['s20', 's17', 's14', 's13', 's04', 's03', 's02']
+
+df.drop(nonimp_feats, axis='columns', inplace=True)
+df_test.drop(nonimp_feats, axis='columns', inplace=True)
+
+x_train_select = df.drop(['label'], axis='columns')
+y_train_select = df['label']
+
+x_test_select = df_test.drop(['label'], axis='columns')
+y_test_select = df_test['label']
+
+
+
+clf.fit(x_train_select, y_train_select)
+
+# y_pred = clf.predict(X_test_scaled)
 
 # tree.plot_tree(clf, filled=True, fontsize=5)
 
-print("Test score: {:.2f}" .format(clf.score(X_test_scaled, y_test)))
-print("Train score: {:.2f}".format(clf.score(X_train_scaled, y_train)))
+print("Test score: {:.2f}" .format(clf.score(x_test_select, y_test_select)))
+print("Train score: {:.2f}".format(clf.score(x_train_select, y_train_select)))
 
 
 plt.show()
