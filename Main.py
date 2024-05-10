@@ -45,8 +45,8 @@ def importData(set):
                  "sensor measurement 5","sensor measurement 6", "sensor measurement 7", "sensor measurement 8", "sensor measurement 9",
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
-                "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21","sensor measurement 22","sensor measurement 23"]
-    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delimiter=" ")
+                "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
+    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
@@ -59,9 +59,6 @@ def add_RUL_column(df):
     return merged
 
 data = importData("train_FD003.txt")
-
-#dropped because of missing values
-data.drop(["sensor measurement 22","sensor measurement 23"], axis='columns', inplace=True) #jeg tror ikke de her sensorer eksiterer, der er kun 26 kolonner i dataen
 
 #dropped because of correlation
 data.drop(["operational setting 1", "operational setting 2", "operational setting 3", "sensor measurement 1", "sensor measurement 5", "sensor measurement 16", "sensor measurement 18", "sensor measurement 19", "sensor measurement 21"],
