@@ -11,6 +11,11 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import VarianceThreshold
+
+from sklearn.ensemble import RandomForestRegressor
+
 
 pd.set_option('display.max_columns', None)  # or 1000
 pd.set_option('display.max_rows', None)  # or 1000
@@ -40,71 +45,79 @@ def score_func(y_true,y_pred):
     print("<)-------------X-------------(>")
 
 def importData(set):
-    Header = ["unit_number","time_in_cycles", "operational setting 1", "operational setting 2", "operational setting 3",
+    Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
                "sensor measurement 1", "sensor measurement 2", "sensor measurement 3", "sensor measurement 4",
                  "sensor measurement 5","sensor measurement 6", "sensor measurement 7", "sensor measurement 8", "sensor measurement 9",
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delim_whitespace=True)
+    data = pd.read_csv("AML/Data/{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
-def add_RUL_column(df):
-    train_grouped_by_unit = df.groupby(by='unit') 
-    max_time = train_grouped_by_unit['time'].max()
-    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit',right_index=True)
-    merged["RUL"] = merged["max_time"] - merged['time']
-    merged = merged.drop("max_time", axis=1)
-    return merged
+def get_RUL_column(df):
+    train_grouped_by_unit = df.groupby(by='unit number') 
+    max_time = train_grouped_by_unit['time, in cycles'].max()
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
+    RUL = merged["max_time"] - merged['time, in cycles']
+    return RUL
 
 data = importData("train_FD003.txt")
+RUL = get_RUL_column(data)
 
-#dropped because of correlation
-data.drop(["operational setting 1", "operational setting 2", "operational setting 3", "sensor measurement 1", "sensor measurement 5", "sensor measurement 16", "sensor measurement 18", "sensor measurement 19", "sensor measurement 21"],
-         axis='columns', inplace=True)
+data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
 
-# print(data.describe().T)
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
 plt.figure(figsize=(10,6))
-sns.heatmap(data.isna().transpose(),
-            cmap = sns.diverging_palette(230, 20, as_cmap=True),
-            cbar_kws={'label': 'Missing Data'})
-
-corr = data.corr()
-mask = np.triu(np.ones_like(corr, dtype=bool))
-f, ax = plt.subplots(figsize=(10, 6))
-cmap = sns.diverging_palette(230, 20, as_cmap=True)
-sns.heatmap(corr,mask=mask, cmap=cmap, vmax=.3, center=0,
-            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+sns.heatmap(correlation, annot=True)
 plt.show()
 
+scaler = MinMaxScaler()
+data_scaled = scaler.fit_transform(data) #scaling the data to use for variance
 
-EOL=[]
-for i in data['unit_number']:
-        EOL.append( ((data[data['unit_number'] == i]["time_in_cycles"]).values)[-1])
-data["EOL"]=EOL
-# Calculate "LR"
-data["LR"] = data["time_in_cycles"].div(data["EOL"])
-data['label'] = pd.cut(data['LR'], bins=[0, 0.6, 0.8, np.inf], labels=[0, 1, 2], right=False)
+var_thresh = VarianceThreshold(threshold=0.01)
+var_thresh.fit(data_scaled)
+#at threshold 0.01 removes: operational setting 3, sensor measurement 1,5,8,9,13,14,16,18,19
 
-#copy to keep old data set
-df = data.copy()
+data = data.loc[:, var_thresh.get_support()] #removing the columns with low variance for both the unscaled and scaled set
 
-print(df.head())
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
 
-#drop unnecessary features
-df.drop(columns=['unit_number', 'EOL', 'LR'], inplace=True)
+relation_to_RUL=correlation.iloc[:,-1] #correlation to target
 
-X_train = df.drop(["label"], axis=1).values
-y_train = df["label"] 
+to_drop = []
+for index, value in relation_to_RUL.items(): #loop which finds the columns with low correlation to the target
+    if abs(value) < 0.1:
+        to_drop.append(index)
+data=data.drop(to_drop, axis=1) #removing the columns with low correlation to the target
 
-print(f"Dimension of feature matrix : {X_train.shape}\ndimension of target vector: {y_train.shape}")
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
+
+high_corr_indices = [] #finding the columns with high correlation to each other
+for i in range(len(correlation)):
+    for j in range(i+1, len(correlation)):
+        if abs(correlation.iloc[i, j]) > 0.9:
+            high_corr_indices.append((i, j))
+            
+print(high_corr_indices) #inspecting to find out which ones to remove
+data=data.drop("sensor measurement 7", axis=1) #removing the columns with low correlation to the target
 
 
-
-
-
-
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
+print(data.columns)#the columns left that can be copied into tuning codes
 
 
 
