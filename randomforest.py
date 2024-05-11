@@ -75,20 +75,20 @@ from sklearn import tree
 target_set = train.iloc[:,-1]
 data_set = train.iloc[:,1:-1]
 
-#X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.25, random_state=0)
-#feature_range = range(1, X_train.shape[1])
-#n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
-#depth_range = range(10, 14)
+X_train, X_test, y_train, y_test=train_test_split(data_set, target_set, test_size=0.2, random_state=42)
+feature_range = range(1, X_train.shape[1])
+n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
+depth_range = range(10, 14)
 
-#rf = RandomForestRegressor(random_state=42)
-#param_grid={'n_estimators': n_estimator_range,
-#            'max_depth': depth_range,
-#            'max_features': feature_range
-#            }
-#grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
+rf = RandomForestRegressor(random_state=42)
+param_grid={'n_estimators': n_estimator_range,
+            'max_depth': depth_range,
+            'max_features': feature_range
+            }
+grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
-#grid.fit(X_train, y_train)
-#scores = pd.DataFrame(grid.cv_results_)
+grid.fit(X_train, y_train)
+scores = pd.DataFrame(grid.cv_results_)
 
 #n_estimators = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
 #max_depth = 10
@@ -100,8 +100,8 @@ data_set = train.iloc[:,1:-1]
 #plt.title('Mean Test Score vs n_estimators (max_depth=10)')
 #plt.show()
 
-#print(grid.best_params_)
-#print(grid.best_score_)
+print(grid.best_params_)
+print(grid.best_score_)
 
 #best_rf = grid.best_estimator_
 #test_score = best_rf.score(X_test, y_test)
