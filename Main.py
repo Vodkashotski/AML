@@ -56,14 +56,28 @@ def importData(set):
     return data
 
 def get_RUL_column(df):
-    train_grouped_by_unit = df.groupby(by='unit number') 
-    max_time = train_grouped_by_unit['time, in cycles'].max()
+    grouped_by_unit = df.groupby(by='unit number') 
+    max_time = grouped_by_unit['time, in cycles'].max()
     merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
     RUL = merged["max_time"] - merged['time, in cycles']
     return RUL
 
+def get_RUL_column_test(df,RUL_np):
+    grouped_by_unit = df.groupby(by='unit number') 
+    max_time = grouped_by_unit['time, in cycles'].max()
+    for i in range(len(max_time)):
+        max_time.iloc[i]=max_time.iloc[i]+RUL_np[i]
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
+    RUL = merged["max_time"] - merged['time, in cycles']
+    return RUL
+
+
 data = importData("train_FD003.txt")
+test = importData("test_FD003.txt")
+end = pd.read_csv("AML\Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+
 RUL = get_RUL_column(data)
+RUL_test = get_RUL_column_test(test,end)
 
 data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
 
@@ -109,15 +123,19 @@ for i in range(len(correlation)):
             high_corr_indices.append((i, j))
             
 print(high_corr_indices) #inspecting to find out which ones to remove
-data=data.drop("sensor measurement 7", axis=1) #removing the columns with low correlation to the target
 
+data=data.drop("sensor measurement 7", axis=1) #removing the columns with low correlation to the target
+new_scaler = MinMaxScaler()
+
+scaled_data = new_scaler.fit_transform(data)
 
 dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
 correlation = dummy_set.corr() #correlation matrix
 plt.figure(figsize=(10,6))
 sns.heatmap(correlation, annot=True)
 plt.show()
+
+test = test.loc[:,data.columns]
+test_scaled = new_scaler.transform(test)
+
 print(data.columns)#the columns left that can be copied into tuning codes
-
-
-
