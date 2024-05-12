@@ -6,6 +6,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn import tree
+from sklearn.metrics import r2_score
+
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -14,7 +16,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    df = pd.read_csv("AML/Data/{}" .format(set), header=None, delim_whitespace=True)
+    df = pd.read_csv("Data/{}" .format(set), header=None, delim_whitespace=True)
     df.columns = Header
     return df
 
@@ -39,7 +41,30 @@ feature_range = range(1, X_train.shape[1])
 n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
 depth_range = range(10, 14)
 
+#scores_train = []
+#std_train = []
+#scores_test = []
+
+#for j in depth_range:
+#    for k in n_estimator_range:
+#        for i in feature_range:
+#            rf = RandomForestRegressor(n_estimators=k, max_features=i, max_depth=j, random_state=42)
+#            rf.fit(X_train,y_train)
+#            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
+#            scores_train.append((i, k, j, score.mean()))
+#            std_train.append((i, k, j, score.std()))
+#            predictions = rf.predict(X_test)
+#            scores_test.append((i,k,j, r2_score(y_test, predictions)))
+
+
 rf = RandomForestRegressor(random_state=42)
+#rf.fit(X_train,y_train)
+#score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
+#predictions = rf.predict(X_test)
+#print(score.mean())
+#print(r2_score(y_test, predictions))
+
+
 param_grid={'n_estimators': n_estimator_range,
             'max_depth': depth_range,
             'max_features': feature_range
@@ -47,7 +72,7 @@ param_grid={'n_estimators': n_estimator_range,
 grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
 grid.fit(X_train, y_train)
-scores = pd.DataFrame(grid.cv_results_)
+scores = grid.cv_results_
 
 print(grid.best_params_)
 print(grid.best_score_)
