@@ -38,41 +38,54 @@ df = df[remaining]
 
 X_train, X_test, y_train, y_test=train_test_split(df, RUL, test_size=0.2, random_state=42)
 feature_range = range(1, X_train.shape[1])
-n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 430, 450, 470]
+n_estimator_range = [10, 50, 100, 250, 300, 350, 400, 400, 450, 470, 490, 500, 550]
 depth_range = range(10, 14)
 
-#scores_train = []
-#std_train = []
-#scores_test = []
+scores_train = []
+std_train = []
+scores_test = []
 
-#for j in depth_range:
-#    for k in n_estimator_range:
-#        for i in feature_range:
-#            rf = RandomForestRegressor(n_estimators=k, max_features=i, max_depth=j, random_state=42)
-#            rf.fit(X_train,y_train)
-#            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
-#            scores_train.append((i, k, j, score.mean()))
-#            std_train.append((i, k, j, score.std()))
-#            predictions = rf.predict(X_test)
-#            scores_test.append((i,k,j, r2_score(y_test, predictions)))
+for j in feature_range:
+            rf = RandomForestRegressor(n_estimators=490, max_features=j, max_depth=13, random_state=42)
+            rf.fit(X_train,y_train)
+            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
+            scores_train.append(score.mean())
+            std_train.append(score.std())
+            predictions = rf.predict(X_test)
+            scores_test.append(r2_score(y_test, predictions))
+    
+
+#plt.errorbar(x=feature_range, y=scores_train, yerr=std_train, label="training scores")
+plt.plot(feature_range, scores_test, label="test scores")
+plt.ylabel("R2 value")
+plt.xlabel("max_features")
+plt.legend()
+plt.show
 
 
 rf = RandomForestRegressor(random_state=42)
-#rf.fit(X_train,y_train)
-#score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
-#predictions = rf.predict(X_test)
-#print(score.mean())
-#print(r2_score(y_test, predictions))
+rf.fit(X_train,y_train)
+score = rf.score(X_train, y_train)
+predictions = rf.predict(X_test)
+print("Untuned train score", score.mean())
+print("Untuned test score",r2_score(y_test, predictions))
 
 
-param_grid={'n_estimators': n_estimator_range,
-            'max_depth': depth_range,
-            'max_features': feature_range
-            }
-grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
+#param_grid={'n_estimators': n_estimator_range,
+#            'max_depth': depth_range,
+#            'max_features': feature_range
+#            }
+#grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
-grid.fit(X_train, y_train)
-scores = grid.cv_results_
+#grid.fit(X_train, y_train)
+#scores = grid.cv_results_
 
-print(grid.best_params_)
-print(grid.best_score_)
+#print(grid.best_params_)
+#print(grid.best_score_)
+
+rf = RandomForestRegressor(n_estimators=490, max_depth=13, max_features=7, random_state=42)
+rf.fit(X_train,y_train)
+score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
+predictions = rf.predict(X_test)
+print("Tuned train score", score.mean())
+print("Tuned test score",r2_score(y_test, predictions))
