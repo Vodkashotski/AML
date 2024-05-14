@@ -9,6 +9,8 @@ from sklearn import tree
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score
+import warnings
+warnings.filterwarnings('ignore')
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -35,7 +37,7 @@ remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
        'sensor measurement 11', 'sensor measurement 12',
        'sensor measurement 17'] #taken from preprocessing
 
-df = df[remaining]
+# df = df[remaining]
 scaler = MinMaxScaler()
 X_train, X_test, y_train, y_test=train_test_split(df, RUL, test_size=0.2, random_state=42)
 # feature_range = range(1, X_train.shape[1])
@@ -65,7 +67,7 @@ plt.yticks(range(np.size(feat_importance)),df.columns.tolist()[0:np.size(feat_im
 
 # plt.show()
 
-print('Cross val score:\n',cross_val_score(clf, X_test, y_test, cv=5, n_jobs=-1))
+print('Cross val score:\n',cross_val_score(clf, df, RUL, cv=5, n_jobs=-1))
 
 y_pred = clf.predict(X_test)
 
