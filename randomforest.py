@@ -53,28 +53,34 @@ test = test[remaining]
 
 X_train, X_test, y_train, y_test=train_test_split(train, RUL, test_size=0.2, random_state=42)
 feature_range = np.arange(1, X_train.shape[1]+1)
-#n_estimator_range = [10, 50, 100, 250, 350, 400, 450, 470, 480, 490, 500, 550]
-n_estimator_range = [400, 450, 470, 480, 490, 500, 550]
+n_estimator_range = [10, 50, 100, 250, 350, 400, 450, 470, 480, 490, 500, 550]
+#n_estimator_range = [400, 450, 470, 480, 490, 500, 550]
 depth_range = np.arange(10, 14)
 
-#scores_cross = []
-#std_cross = []
-#scores_train =[]
-#scores_test = []
+scores_cross = []
+std_cross = []
+scores_train =[]
+scores_valid = []
+scores_test = []
 
 #for j in feature_range:
 #            rf = RandomForestRegressor(n_estimators=490, max_features=j, max_depth=13, random_state=42)
-#            rf.fit(train,RUL)
+#            rf.fit(X_train,y_train)
 #            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
 #            scores_cross.append(score.mean())
 #            std_cross.append(score.std())
 #            scores_train.append(rf.score(X_train, y_train))
+#            
 #            predictions = rf.predict(X_test)
-#            scores_test.append(r2_score(y_test, predictions))
+#            scores_valid.append(r2_score(y_test, predictions))
+#            
+#            predictions2 = rf.predict(test)
+#            scores_test.append(r2_score(RUL_test,predictions2))
 
 #Saving the data to avoid having to run the loop every time
 #np.save("cross_val_scores.npy", scores_train)
 #np.save("cross_val_std.npy", std_cross)
+#np.save("scores_valid.npy", scores_valid)
 #np.save("scores_test.npy", scores_test)
 #np.save("scores_train.npy", scores_train)
 
@@ -92,21 +98,24 @@ depth_range = np.arange(10, 14)
 #plt.legend()
 #plt.show()
 
-#for j in  n_estimator_range:
-#            rf = RandomForestRegressor(n_estimators=j, max_features=7, max_depth=13, random_state=42)
-#            rf.fit(train,RUL)
-#            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
-#            scores_cross.append(score.mean())
-#            std_cross.append(score.std())
-#            scores_train.append(rf.score(X_train, y_train))
-#            predictions = rf.predict(X_test)
-#            scores_test.append(r2_score(y_test, predictions))
+for j in  n_estimator_range:
+            rf = RandomForestRegressor(n_estimators=j, max_features=7, max_depth=13, random_state=42)
+            rf.fit(train,RUL)
+            score = cross_val_score(rf, X_train, y_train, cv=5, scoring='r2')
+            scores_cross.append(score.mean())
+            std_cross.append(score.std())
+            scores_train.append(rf.score(X_train, y_train))
+            
+            predictions = rf.predict(X_test)
+            scores_valid.append(r2_score(y_test, predictions))
+            predictions2 = rf.predict(test)
+            scores_test.append(r2_score(RUL_test,predictions2))
           
 
-#np.save("cross_val_scores_n.npy", scores_train)
-#np.save("cross_val_std_n.npy", std_cross)
-#np.save("scores_test_n.npy", scores_test)
-#np.save("scores_train_n.npy", scores_train)
+np.save("cross_val_scores_n.npy", scores_train)
+np.save("cross_val_std_n.npy", std_cross)
+np.save("scores_test_n.npy", scores_test)
+np.save("scores_train_n.npy", scores_train)
 
 rf = RandomForestRegressor(random_state=42)
 rf.fit(X_train,y_train)
@@ -117,23 +126,23 @@ print("Untuned validation score",r2_score(y_test, predictions))
 predictions = rf.predict(test)
 print("Untuned test set score",r2_score(RUL_test, predictions))
 
-param_grid={'n_estimators': n_estimator_range,
-            'max_depth': depth_range,
-            'max_features': feature_range
-            }
-grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
+#param_grid={'n_estimators': n_estimator_range,
+#            'max_depth': depth_range,
+#            'max_features': feature_range
+#            }
+#grid = GridSearchCV(rf, param_grid, cv=5, n_jobs=-1)
 
-grid.fit(X_train, y_train)
-scores = grid.cv_results_
+#grid.fit(X_train, y_train)
+#scores = grid.cv_results_
 
-print(grid.best_params_)
-print(grid.best_score_)
+#print(grid.best_params_)
+#print(grid.best_score_)
 
-#rf = RandomForestRegressor(n_estimators=490, max_depth=13, max_features=7, random_state=42)
+rf = RandomForestRegressor(n_estimators=490, max_depth=13, max_features=7, random_state=42)
 rf.fit(X_train,y_train)
-score = grid.score(X_train, y_train)
-predictions = grid.predict(X_test)
+score = rf.score(X_train, y_train)
+predictions = rf.predict(X_test)
 print("Tuned train score", score.mean())
 print("Tuned validation score",r2_score(y_test, predictions))
-predictions = grid.predict(test)
+predictions = rf.predict(test)
 print("Tuned test set score",r2_score(RUL_test, predictions))
