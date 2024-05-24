@@ -13,6 +13,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
+import time
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -51,7 +52,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delim_whitespace=True)
+    data = pd.read_csv("Data/{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
@@ -74,7 +75,7 @@ def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on 
 
 data = importData("train_FD003.txt") #importing the main data
 test = importData("test_FD003.txt")  #importing the other data
-end = pd.read_csv("AML\Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
 
 RUL = get_RUL_column(data) #making the RL columns
 RUL_test = get_RUL_column_test(test,end)
@@ -132,3 +133,22 @@ test = test.loc[:,data.columns]
 test_scaled = new_scaler.transform(test)
 
 print(data.columns)#the columns left that can be copied into tuning codes
+
+#Evaluation of the optimised methods, by plotting and duration
+
+rf=RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
+start = time.time()
+rf.fit(data, RUL)
+predictions_rf = rf.predict(test)
+end = time.time()
+rf_time = round(end-start, 2)
+
+fig, ax = plt.subplots(2,2, figsize=(10,10))
+ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
+ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_xlabel('Actual RUL')
+ax[1,1].set_ylabel('Predicted RUL')
+
+plt.tight_layout()
+plt.show()
