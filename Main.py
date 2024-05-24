@@ -105,6 +105,9 @@ for index, value in relation_to_RUL.items(): #loop which finds the columns with 
         to_drop.append(index)
 data=data.drop(to_drop, axis=1) #removing the columns with low correlation to the target
 
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+
 high_corr_indices = [] #finding the columns with high correlation to each other
 for i in range(len(correlation)):
     for j in range(i+1, len(correlation)):
