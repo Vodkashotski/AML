@@ -52,7 +52,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    data = pd.read_csv("Data/{}" .format(set), header=None, delim_whitespace=True)
+    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
@@ -75,7 +75,7 @@ def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on 
 
 data = importData("train_FD003.txt") #importing the main data
 test = importData("test_FD003.txt")  #importing the other data
-end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+end = pd.read_csv("AML\Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
 
 RUL = get_RUL_column(data) #making the RL columns
 RUL_test = get_RUL_column_test(test,end)
