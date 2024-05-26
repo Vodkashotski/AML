@@ -7,7 +7,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import r2_score
-#from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import mean_squared_error
+import math
+
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -36,18 +38,31 @@ def get_RUL_column_test(df,RUL_np):
     return RUL
 
 
-df = importData("train_FD003.txt")
+train = importData("train_FD003.txt")
 test = importData("test_FD003.txt")
 end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
 
-RUL = get_RUL_column(df)
+RUL = get_RUL_column(train)
 RUL_test = get_RUL_column_test(test,end)
 
+forest = RandomForestRegressor(random_state=42)
+forest.fit(train, RUL)
+importances = forest.feature_importances_
+std = np.std([tree.feature_importances_ for tree in forest.estimators_], axis=0)
+forest_importances = pd.Series(importances)
+
+fig, ax = plt.subplots()
+forest_importances.plot.bar(yerr=std, ax=ax)
+ax.set_title("Feature importances using MDI")
+ax.set_ylabel("Mean decrease in impurity")
+fig.tight_layout()
+plt.show()
+
 remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
-       'sensor measurement 4', 'sensor measurement 6', 'sensor measurement 10', 'sensor measurement 11', 'sensor measurement 12',
+       'sensor measurement 4', 'sensor measurement 6', 'sensor measurement 10', 'sensor measurement 11', 'sensor measurement 12', 'sensor measurement 13', 'sensor measurement 14',
        'sensor measurement 17'] #taken from preprocessing
 
-train = df[remaining]
+train = train[remaining]
 test = test[remaining]
 
 #defining paramters for grid search
@@ -134,76 +149,88 @@ depth_range = np.arange(1, 15)
 # np.save("scores_train_n.npy", scores_train)
 
 # X_train, X_test, y_train, y_test=train_test_split(train, RUL, test_size=0.2, random_state=42)
-# rf = RandomForestRegressor(random_state=42)
-# rf.fit(train,RUL)
-# score = rf.score(train, RUL)
-# print("Untuned train score", score.mean())
-# predictions = rf.predict(test)
-# print("Untuned test set score",r2_score(RUL_test, predictions))
+rf = RandomForestRegressor(random_state=42)
+rf.fit(train,RUL)
+
+predictions_train = rf.predict(train)
+predictions_test = rf.predict(test)
+
+r2_train = r2_score(RUL, predictions_train)
+RSME_train = math.sqrt(mean_squared_error(RUL, predictions_train))
+
+r2_test = r2_score(RUL_test, predictions_test)
+RSME_test = math.sqrt(mean_squared_error(RUL_test, predictions_test))
+
+print("Untuned train R2 score: ", r2_train)
+print("Untuned train RSME score: ", RSME_train)
+
+print("Untuned test R2 score: ",r2_test)
+print("Untuned test RSME score: ", RSME_test)
 
 
-# rf = RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
-# rf.fit(train,RUL)
-# predictions_train = rf.predict(train)
-# predictions_test = rf.predict(test)
-# r2_train = r2_score(RUL, predictions_train)
-# RSME_train = root_mean_squared_error(RUL, predictions_train)
+rf = RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
+rf.fit(train,RUL)
+predictions_train = rf.predict(train)
+predictions_test = rf.predict(test)
 
-# r2_test = r2_score(RUL_test, predictions_test)
-# RSME_test = root_mean_squared_error(RUL_test, predictions_test)
+r2_train = r2_score(RUL, predictions_train)
+RSME_train = math.sqrt(mean_squared_error(RUL, predictions_train))
 
-# print("Tuned train R2 score: ", r2_train)
-# print("Tuned train RSME score: ", RSME_train)
+r2_test = r2_score(RUL_test, predictions_test)
+RSME_test = math.sqrt(mean_squared_error(RUL_test, predictions_test))
 
-# print("Tuned test R2 score: ",r2_test)
-# print("Tuned test RSME score: ", RSME_test)
+print("Tuned train R2 score: ", r2_train)
+print("Tuned train RSME score: ", RSME_train)
+
+print("Tuned test R2 score: ",r2_test)
+print("Tuned test RSME score: ", RSME_test)
 
 # #loading data for plotting
-score_cross = np.load("cross_val_scores.npy", allow_pickle=True)
-std_cross = np.load("cross_val_std.npy", allow_pickle=True)
-std_train = np.load("train_std.npy", allow_pickle=True)
-scores_train = np.load("scores_train.npy", allow_pickle=True)
+# score_cross = np.load("cross_val_scores.npy", allow_pickle=True)
+# std_cross = np.load("cross_val_std.npy", allow_pickle=True)
+# std_train = np.load("train_std.npy", allow_pickle=True)
+# scores_train = np.load("scores_train.npy", allow_pickle=True)
 
-score_cross_n = np.load("cross_val_scores_n.npy", allow_pickle=True)
-std_cross_n = np.load("cross_val_std_n.npy", allow_pickle=True)
-std_train_n = np.load("train_std_n.npy", allow_pickle=True)
-scores_train_n = np.load("scores_train_n.npy", allow_pickle=True)
+# score_cross_n = np.load("cross_val_scores_n.npy", allow_pickle=True)
+# std_cross_n = np.load("cross_val_std_n.npy", allow_pickle=True)
+# std_train_n = np.load("train_std_n.npy", allow_pickle=True)
+# scores_train_n = np.load("scores_train_n.npy", allow_pickle=True)
 
-score_cross_d = np.load("cross_val_scores_d.npy", allow_pickle=True)
-std_cross_d = np.load("cross_val_std_d.npy", allow_pickle=True)
-std_train_d = np.load("train_std_d.npy", allow_pickle=True)
-scores_train_d = np.load("scores_train_d.npy", allow_pickle=True)
+# score_cross_d = np.load("cross_val_scores_d.npy", allow_pickle=True)
+# std_cross_d = np.load("cross_val_std_d.npy", allow_pickle=True)
+# std_train_d = np.load("train_std_d.npy", allow_pickle=True)
+# scores_train_d = np.load("scores_train_d.npy", allow_pickle=True)
 
-#plotting
-fig, ax = plt.subplots(1,3, figsize=(12,4))
-ax[0].errorbar(feature_range, score_cross, yerr=std_cross, label = 'Cross validation score')
-ax[0].errorbar(feature_range, scores_train, yerr=std_train, label = 'Train score')
-ax[0].set_xticks(feature_range)
-ax[0].set_xticklabels(feature_range, fontsize=12)
-ax[0].set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9])
-ax[0].set_yticklabels([0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90],fontsize=12)
-ax[0].set_xlabel('Max Features',fontsize=14)
-ax[0].set_ylabel('R2 score',fontsize=14)
+# #plotting
+# fig, ax = plt.subplots(1,3, figsize=(12,4))
+# ax[0].errorbar(feature_range, score_cross, yerr=std_cross, label = 'Cross validation score')
+# ax[0].errorbar(feature_range, scores_train, yerr=std_train, label = 'Train score')
+# ax[0].set_xticks(feature_range)
+# ax[0].set_xticklabels(feature_range, fontsize=12)
+# ax[0].set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9])
+# ax[0].set_yticklabels([0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90],fontsize=12)
+# ax[0].set_xlabel('Max Features',fontsize=14)
+# ax[0].set_ylabel('R2 score',fontsize=14)
 
-ax[1].errorbar(n_estimator_range, score_cross_n, yerr=std_cross_n, label = 'Cross validation score')
-ax[1].errorbar(n_estimator_range, scores_train_n, yerr=std_train_n, label = 'Train score')
-ax[1].set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85])
-ax[1].set_yticklabels([0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85],fontsize=12)
-ax[1].set_xticks([0, 100, 200, 300, 400, 500, 600])
-ax[1].set_xticklabels([0, 100, 200, 300, 400, 500, 600], fontsize=12)
-ax[1].set_xlabel('N estimators',fontsize=14)
-ax[1].set_ylabel('R2 score',fontsize=14)
+# ax[1].errorbar(n_estimator_range, score_cross_n, yerr=std_cross_n, label = 'Cross validation score')
+# ax[1].errorbar(n_estimator_range, scores_train_n, yerr=std_train_n, label = 'Train score')
+# ax[1].set_yticks([0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85])
+# ax[1].set_yticklabels([0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85],fontsize=12)
+# ax[1].set_xticks([0, 100, 200, 300, 400, 500, 600])
+# ax[1].set_xticklabels([0, 100, 200, 300, 400, 500, 600], fontsize=12)
+# ax[1].set_xlabel('N estimators',fontsize=14)
+# ax[1].set_ylabel('R2 score',fontsize=14)
 
-ax[2].errorbar(depth_range, score_cross_d, yerr=std_cross_d, label = 'Cross validation score')
-ax[2].errorbar(depth_range, scores_train_d, yerr=std_train_d, label = 'Train score')
-ax[2].set_xticks([2, 4, 6, 8,10, 12 ,14])
-ax[2].set_xticklabels([2, 4, 6, 8,10, 12 ,14], fontsize=12)
-ax[2].set_yticks([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
-ax[2].set_yticklabels([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],fontsize=12)
-ax[2].set_xlabel('Max depth', fontsize=14)
-ax[2].set_ylabel('R2 score', fontsize=14)
+# ax[2].errorbar(depth_range, score_cross_d, yerr=std_cross_d, label = 'Cross validation score')
+# ax[2].errorbar(depth_range, scores_train_d, yerr=std_train_d, label = 'Train score')
+# ax[2].set_xticks([2, 4, 6, 8,10, 12 ,14])
+# ax[2].set_xticklabels([2, 4, 6, 8,10, 12 ,14], fontsize=12)
+# ax[2].set_yticks([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+# ax[2].set_yticklabels([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],fontsize=12)
+# ax[2].set_xlabel('Max depth', fontsize=14)
+# ax[2].set_ylabel('R2 score', fontsize=14)
 
-plt.legend(fontsize=12, loc=4)
-fig.suptitle('Optimisation parameters for Random Forest Regresssion', fontsize=16)
-plt.tight_layout()
-plt.show()
+# plt.legend(fontsize=12, loc=4)
+# fig.suptitle('Optimisation parameters for Random Forest ', fontsize=16)
+# plt.tight_layout()
+# plt.show()
