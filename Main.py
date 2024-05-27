@@ -13,6 +13,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
+import time
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -55,14 +56,14 @@ def importData(set):
     data.columns = Header
     return data
 
-def get_RUL_column(df):
+def get_RUL_column(df): #function which makes a RUL column based on the time variate series
     grouped_by_unit = df.groupby(by='unit number') 
     max_time = grouped_by_unit['time, in cycles'].max()
     merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
     RUL = merged["max_time"] - merged['time, in cycles']
     return RUL
 
-def get_RUL_column_test(df,RUL_np):
+def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on the time variate series and remaining time
     grouped_by_unit = df.groupby(by='unit number') 
     max_time = grouped_by_unit['time, in cycles'].max()
     for i in range(len(max_time)):
@@ -72,19 +73,20 @@ def get_RUL_column_test(df,RUL_np):
     return RUL
 
 
-data = importData("train_FD003.txt")
-test = importData("test_FD003.txt")
-end = pd.read_csv("AML\Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+data = importData("train_FD003.txt") #importing the main data
+test = importData("test_FD003.txt")  #importing the other data
+end = pd.read_csv("Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
 
-RUL = get_RUL_column(data)
+RUL = get_RUL_column(data) #making the RL columns
 RUL_test = get_RUL_column_test(test,end)
 
 data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
 
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making dummy set so RUL can be in the corr matrix
 correlation = dummy_set.corr() #correlation matrix
+labels =["Time","Setting 1", "Setting 2", "Setting 3", "Sensor 1","Sensor 2", "Sensor 3", "Sensor 4","Sensor 5", "Sensor 6","Sensor 7","Sensor 8","Sensor 9", "Sensor 10", "Sensor 11", "Sensor 12", "Sensor 13", "Sensor 14", "Sensor 15", "Sensor 16", "Sensor 17", "Sensor 18", "Sensor 19", "Sensor 20",  "Sensor 21", "RUL"]
 plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
+sns.heatmap(correlation,xticklabels=labels, yticklabels=labels)
 plt.show()
 
 scaler = MinMaxScaler()
@@ -96,12 +98,6 @@ var_thresh.fit(data_scaled)
 
 data = data.loc[:, var_thresh.get_support()] #removing the columns with low variance for both the unscaled and scaled set
 
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
-
 relation_to_RUL=correlation.iloc[:,-1] #correlation to target
 
 to_drop = []
@@ -112,9 +108,6 @@ data=data.drop(to_drop, axis=1) #removing the columns with low correlation to th
 
 dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
 correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
 
 high_corr_indices = [] #finding the columns with high correlation to each other
 for i in range(len(correlation)):
@@ -132,10 +125,30 @@ scaled_data = new_scaler.fit_transform(data)
 dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
 correlation = dummy_set.corr() #correlation matrix
 plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
+labels =["Time", "Sensor 2", "Sensor 3", "Sensor 4", "Sensor 6", "Sensor 10", "Sensor 11", "Sensor 12", "Sensor 17", "RUL"]
+sns.heatmap(correlation, annot=True, xticklabels=labels, yticklabels=labels)
 plt.show()
 
 test = test.loc[:,data.columns]
 test_scaled = new_scaler.transform(test)
 
 print(data.columns)#the columns left that can be copied into tuning codes
+
+#Evaluation of the optimised methods, by plotting and duration
+
+rf=RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
+start = time.time()
+rf.fit(data, RUL)
+predictions_rf = rf.predict(test)
+end = time.time()
+rf_time = round(end-start,2)
+
+fig, ax = plt.subplots(2,2, figsize=(10,10))
+ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
+ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_xlabel('Actual RUL')
+ax[1,1].set_ylabel('Predicted RUL')
+
+plt.tight_layout()
+plt.show()
