@@ -15,7 +15,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
 import time
 
+
 from sklearn.ensemble import RandomForestRegressor
+from sklearn import tree
 
 
 pd.set_option('display.max_columns', None)  # or 1000
@@ -147,6 +149,23 @@ fig, ax = plt.subplots(2,2, figsize=(10,10))
 ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
 ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
 ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_xlabel('Actual RUL')
+ax[1,1].set_ylabel('Predicted RUL')
+
+plt.tight_layout()
+plt.show()
+
+clf = tree.DecisionTreeClassifier(min_samples_split= 21, max_depth= 10) #set params to the best peforming
+start = time.time()
+clf.fit(data, RUL)
+predictions_clf = clf.predict(test)
+end = time.time()
+clf_time = round(end-start,2)
+
+fig, ax = plt.subplots(2,2, figsize=(10,10))
+ax[1,1].scatter(RUL_test, predictions_clf, alpha=0.1)
+ax[1,1].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
 ax[1,1].set_xlabel('Actual RUL')
 ax[1,1].set_ylabel('Predicted RUL')
 

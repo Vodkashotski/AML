@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn import tree
-
+import time
 
 import warnings
 warnings.filterwarnings('ignore') #Warnings have been disables due to the delim_whitespace parameter being used. This decreases output time and declutters.
@@ -31,8 +31,19 @@ def get_RUL_column(df):
     RUL = merged["max_time"] - merged['time, in cycles']
     return RUL
 
+def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on the time variate series and remaining time
+    grouped_by_unit = df.groupby(by='unit number') 
+    max_time = grouped_by_unit['time, in cycles'].max()
+    for i in range(len(max_time)):
+        max_time.iloc[i]=max_time.iloc[i]+RUL_np[i]
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
+    RUL = merged["max_time"] - merged['time, in cycles']
+    return RUL
+
 df = importData("train_FD003.txt") #import the data of the third jet engine and get the RUL column for the data
+test = importData("test_FD003.txt")
 RUL=get_RUL_column(df)
+RUL_test = get_RUL_column_test(df, RUL)
 remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
        'sensor measurement 4', 'sensor measurement 6', 'sensor measurement 10',
        'sensor measurement 11', 'sensor measurement 12',
@@ -80,4 +91,22 @@ print('Cross val score:\n',cross_val_score(clf, df, RUL, cv=5, n_jobs=-1)) #doin
 print("Test score: {:.3f}" .format(clf.score(X_test, y_test))) 
 print("Train score: {:.3f}".format(clf.score(X_train, y_train)))
 
+#Evaluation of the optimised methods, by plotting and duration
 
+test = test.loc[:,df.columns]
+
+start = time.time()
+clf.fit(df, RUL)
+predictions_clf = clf.predict(test)
+end = time.time()
+clf_time = round(end-start,2)
+
+fig, ax = plt.subplots(2,2, figsize=(10,10))
+ax[1,1].scatter(RUL_test, predictions_clf, alpha=0.1)
+ax[1,1].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
+ax[1,1].set_xlabel('Actual RUL')
+ax[1,1].set_ylabel('Predicted RUL')
+
+plt.tight_layout()
+plt.show()
