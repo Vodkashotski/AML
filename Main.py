@@ -54,7 +54,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    data = pd.read_csv("AML\Data\{}" .format(set), header=None, delim_whitespace=True)
+    data = pd.read_csv("Data\{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
@@ -145,16 +145,6 @@ predictions_rf = rf.predict(test)
 end = time.time()
 rf_time = round(end-start,2)
 
-fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
-ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
-ax[1,1].set_xlabel('Actual RUL')
-ax[1,1].set_ylabel('Predicted RUL')
-
-plt.tight_layout()
-plt.show()
-
 clf = tree.DecisionTreeClassifier(min_samples_split= 21, max_depth= 10) #set params to the best peforming
 start = time.time()
 clf.fit(data, RUL)
@@ -163,11 +153,17 @@ end = time.time()
 clf_time = round(end-start,2)
 
 fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,1].scatter(RUL_test, predictions_clf, alpha=0.1)
-ax[1,1].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
+ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
+ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
 ax[1,1].set_xlabel('Actual RUL')
 ax[1,1].set_ylabel('Predicted RUL')
+
+ax[1,0].scatter(RUL_test, predictions_clf, alpha=0.1)
+ax[1,0].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
+ax[1,0].set_title(f"Decision tree model\n Fitted and predicted in {clf_time} secs")
+ax[1,0].set_xlabel('Actual RUL')
+ax[1,0].set_ylabel('Predicted RUL')
 
 plt.tight_layout()
 plt.show()
