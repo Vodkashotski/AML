@@ -84,11 +84,11 @@ RUL_test = get_RUL_column_test(test,end)
 
 data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
 
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making dummy set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-labels =["Time","Setting 1", "Setting 2", "Setting 3", "Sensor 1","Sensor 2", "Sensor 3", "Sensor 4","Sensor 5", "Sensor 6","Sensor 7","Sensor 8","Sensor 9", "Sensor 10", "Sensor 11", "Sensor 12", "Sensor 13", "Sensor 14", "Sensor 15", "Sensor 16", "Sensor 17", "Sensor 18", "Sensor 19", "Sensor 20",  "Sensor 21", "RUL"]
+dummy_set1 = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making dummy set so RUL can be in the corr matrix
+correlation1 = dummy_set1.corr() #correlation matrix
+labels1 =["Time","Setting 1", "Setting 2", "Setting 3", "Sensor 1","Sensor 2", "Sensor 3", "Sensor 4","Sensor 5", "Sensor 6","Sensor 7","Sensor 8","Sensor 9", "Sensor 10", "Sensor 11", "Sensor 12", "Sensor 13", "Sensor 14", "Sensor 15", "Sensor 16", "Sensor 17", "Sensor 18", "Sensor 19", "Sensor 20",  "Sensor 21", "RUL"]
 plt.figure(figsize=(10,6))
-sns.heatmap(correlation,xticklabels=labels, yticklabels=labels)
+sns.heatmap(correlation1,xticklabels=labels1, yticklabels=labels1)
 plt.show()
 
 scaler = MinMaxScaler()
@@ -100,7 +100,7 @@ var_thresh.fit(data_scaled)
 
 data = data.loc[:, var_thresh.get_support()] #removing the columns with low variance for both the unscaled and scaled set
 
-relation_to_RUL=correlation.iloc[:,-1] #correlation to target
+relation_to_RUL=correlation1.iloc[:,-1] #correlation to target
 
 to_drop = []
 for index, value in relation_to_RUL.items(): #loop which finds the columns with low correlation to the target
@@ -126,9 +126,16 @@ scaled_data = new_scaler.fit_transform(data)
 
 dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
 correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
 labels =["Time", "Sensor 2", "Sensor 3", "Sensor 4", "Sensor 6", "Sensor 10", "Sensor 11", "Sensor 12", "Sensor 17", "RUL"]
-sns.heatmap(correlation, annot=True, xticklabels=labels, yticklabels=labels)
+
+fig, ax = plt.subplots(1,2, figsize=(12,5))
+sns.set(font_scale=0.9)
+sns.heatmap(correlation1, xticklabels=labels1, yticklabels=labels1, ax=ax[0])
+ax[0].set_title("Full data set", fontsize=14)
+
+sns.heatmap(correlation, annot=True, xticklabels=labels, yticklabels=labels, ax=ax[1])
+ax[1].set_title("Tailored data set", fontsize=14)
+plt.tight_layout()
 plt.show()
 
 test = test.loc[:,data.columns]
@@ -136,8 +143,8 @@ test_scaled = new_scaler.transform(test)
 
 print(data.columns)#the columns left that can be copied into tuning codes
 
-#Evaluation of the optimised methods, by plotting and duration
 
+#Evaluation of the optimised methods, by plotting and duration
 rf=RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
 start = time.time()
 rf.fit(data, RUL)
@@ -155,7 +162,7 @@ clf_time = round(end-start,2)
 fig, ax = plt.subplots(2,2, figsize=(10,10))
 ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
 ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_title(f"Random Forest model\n Fitted and predicted in {rf_time} secs")
 ax[1,1].set_xlabel('Actual RUL')
 ax[1,1].set_ylabel('Predicted RUL')
 
