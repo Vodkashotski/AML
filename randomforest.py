@@ -8,6 +8,9 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_percentage_error
+from sklearn.metrics import mean_absolute_error
+
 import math
 
 
@@ -46,15 +49,16 @@ RUL = get_RUL_column(train)
 RUL_test = get_RUL_column_test(test,end)
 
 forest = RandomForestRegressor(random_state=42)
-forest.fit(train, RUL)
+forest.fit(train.iloc[:, 1:], RUL)
 importances = forest.feature_importances_
 std = np.std([tree.feature_importances_ for tree in forest.estimators_], axis=0)
-forest_importances = pd.Series(importances)
+forest_importances = pd.Series(importances, index=train.iloc[:, 1:].columns)
 
 fig, ax = plt.subplots()
-forest_importances.plot.bar(yerr=std, ax=ax)
-ax.set_title("Feature importances using MDI")
-ax.set_ylabel("Mean decrease in impurity")
+plt.bar(range(25),importances)
+plt.xticks(range(25),train.iloc[:, 1:].columns, rotation=90)
+ax.set_title("Feature importances of Random Forests")
+
 fig.tight_layout()
 plt.show()
 
@@ -174,15 +178,23 @@ predictions_test = rf.predict(test)
 
 r2_train = r2_score(RUL, predictions_train)
 RSME_train = math.sqrt(mean_squared_error(RUL, predictions_train))
+MAPE_train = mean_absolute_percentage_error(RUL, predictions_train)
+MAE_train = mean_absolute_error(RUL, predictions_train)
 
 r2_test = r2_score(RUL_test, predictions_test)
 RSME_test = math.sqrt(mean_squared_error(RUL_test, predictions_test))
+MAPE_test = mean_absolute_percentage_error(RUL_test, predictions_test)
+MAE_test = mean_absolute_error(RUL_test, predictions_test)
 
 print("Tuned train R2 score: ", r2_train)
 print("Tuned train RSME score: ", RSME_train)
+print("Tuned train MAE score: ", MAE_train)
+print("Tuned train MAPE score: ", MAPE_train)
 
 print("Tuned test R2 score: ",r2_test)
 print("Tuned test RSME score: ", RSME_test)
+print("Tuned test MAE score: ", MAE_test)
+print("Tuned test MAPE score: ", MAPE_test)
 
 #loading data for plotting
 score_cross = np.load("RF_data/cross_val_scores.npy", allow_pickle=True)
