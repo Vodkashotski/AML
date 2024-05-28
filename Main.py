@@ -155,7 +155,7 @@ ax[1,1].set_ylabel('Predicted RUL')
 plt.tight_layout()
 plt.show()
 
-clf = tree.DecisionTreeClassifier(min_samples_split= 21, max_depth= 10) #set params to the best peforming
+clf = tree.DecisionTreeRegressor(min_samples_split= 21, max_depth= 10) #set params to the best peforming
 start = time.time()
 clf.fit(data, RUL)
 predictions_clf = clf.predict(test)
@@ -163,11 +163,11 @@ end = time.time()
 clf_time = round(end-start,2)
 
 fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,1].scatter(RUL_test, predictions_clf, alpha=0.1)
-ax[1,1].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
-ax[1,1].set_xlabel('Actual RUL')
-ax[1,1].set_ylabel('Predicted RUL')
+ax[1,2].scatter(RUL_test, predictions_clf, alpha=0.1)
+ax[1,2].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
+ax[1,2].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
+ax[1,2].set_xlabel('Actual RUL')
+ax[1,2].set_ylabel('Predicted RUL')
 
 plt.tight_layout()
 plt.show()

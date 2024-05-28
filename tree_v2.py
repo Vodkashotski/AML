@@ -2,6 +2,7 @@ from matplotlib.pylab import rand
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
@@ -42,8 +43,10 @@ def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on 
 
 df = importData("train_FD003.txt") #import the data of the third jet engine and get the RUL column for the data
 test = importData("test_FD003.txt")
+end = pd.read_csv("AML\Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+
 RUL=get_RUL_column(df)
-RUL_test = get_RUL_column_test(df, RUL)
+RUL_test = get_RUL_column_test(test, end)
 remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
        'sensor measurement 4', 'sensor measurement 6', 'sensor measurement 10',
        'sensor measurement 11', 'sensor measurement 12',
@@ -57,7 +60,7 @@ print(f"Dimension of feature matrix : {X_train.shape}\n Dimension of target vect
 param_grid = {'max_depth':range(1, 12, 1),'min_samples_split':range(1, 121, 10)} #parameter grid for the descision tree
 
 #using grid search to find best params 
-grid = GridSearchCV(estimator= tree.DecisionTreeClassifier(random_state=42), param_grid=param_grid, cv=None, return_train_score=True, n_jobs=-1)
+grid = GridSearchCV(estimator= tree.DecisionTreeRegressor(random_state=42), param_grid=param_grid, cv=None, return_train_score=True, n_jobs=-1)
 grid.fit(X_train, y_train)
 scores = pd.DataFrame(grid.cv_results_)
 print(" Results from {} " .format(grid.__class__))
@@ -65,6 +68,7 @@ print("\n The best estimator across ALL searched params:\n",grid.best_estimator_
 print("\n The best score across ALL searched params:\n",grid.best_score_)
 print("\n The best parameters across ALL searched params:\n",grid.best_params_)
 
+plt.figure(0)
 scores.plot(x='param_max_depth', y='mean_train_score', yerr='std_train_score', ax=plt.gca(), figsize=(20,8))
 scores.plot(x='param_max_depth', y='mean_test_score', yerr='std_test_score', ax=plt.gca(), figsize=(20,8))
 plt.tick_params(axis='x', labelsize=20)
@@ -74,39 +78,39 @@ plt.legend(fontsize=18)
 
 plt.show()
 
-clf = tree.DecisionTreeClassifier(min_samples_split= 21, max_depth= 10) #set params to the best peforming
+dtr = tree.DecisionTreeRegressor(min_samples_split= 91, max_depth= 9) #set params to the best peforming
 
-clf.fit(X_train, y_train)
+dtr.fit(X_train, y_train)
 
-feat_importance = clf.feature_importances_
+feat_importance = dtr.feature_importances_
 
 #make a bar plot showing feature importance
+plt.figure(1)
 plt.barh(range(np.size(feat_importance)), feat_importance)
 plt.yticks(range(np.size(feat_importance)),df.columns.tolist()[0:np.size(feat_importance)])
+plt.title("Feature importance for Decision tree")
+plt.show()
 
-# plt.show()
+print('Cross val score:\n',cross_val_score(dtr, df, RUL, cv=5, n_jobs=-1)) #doing cross val to see how well the tree works with the dataframe
 
-print('Cross val score:\n',cross_val_score(clf, df, RUL, cv=5, n_jobs=-1)) #doing cross val to see how well the tree works with the dataframe
+print("Test score: {:.3f}" .format(dtr.score(X_test, y_test))) 
+print("Train score: {:.3f}".format(dtr.score(X_train, y_train)))
 
-print("Test score: {:.3f}" .format(clf.score(X_test, y_test))) 
-print("Train score: {:.3f}".format(clf.score(X_train, y_train)))
 
 #Evaluation of the optimised methods, by plotting and duration
 
 test = test.loc[:,df.columns]
+print("R2 score:", r2_score(dtr.predict(test), RUL_test))
 
+plt.figure(2)
 start = time.time()
-clf.fit(df, RUL)
-predictions_clf = clf.predict(test)
+dtr.fit(df, RUL)
+predictions_dtr = dtr.predict(test)
 end = time.time()
-clf_time = round(end-start,2)
-
-fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,1].scatter(RUL_test, predictions_clf, alpha=0.1)
-ax[1,1].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
-ax[1,1].set_xlabel('Actual RUL')
-ax[1,1].set_ylabel('Predicted RUL')
-
-plt.tight_layout()
+dtr_time = round(end-start,2)
+plt.scatter(RUL_test, predictions_dtr, alpha=0.1)
+plt.plot(predictions_dtr,predictions_dtr, linestyle='--', color='red')
+plt.title(f"Decision Tree model\n Fitted and predicted in {dtr_time} secs")
+plt.xlabel('Actual RUL')
+plt.ylabel('Predicted RUL')
 plt.show()
