@@ -18,6 +18,7 @@ import time
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn import tree
+from sklearn.svm import SVR
 
 
 pd.set_option('display.max_columns', None)  # or 1000
@@ -181,6 +182,23 @@ ax[1,0].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
 ax[1,0].set_title(f"Decision tree model\n Fitted and predicted in {clf_time} secs")
 ax[1,0].set_xlabel('Actual RUL')
 ax[1,0].set_ylabel('Predicted RUL')
+
+plt.tight_layout()
+plt.show()
+
+svr = SVR(kernel='rbf', C=1000000, gamma="scale", epsilon=50)
+start = time.time()
+svr.fit(data, RUL)
+predictions_svr = svr.predict(test)
+end = time.time()
+svr_time = round(end-start,2)
+
+fig, ax = plt.subplots(2,2, figsize=(10,10))
+ax[2,2].scatter(RUL_test, predictions_svr, alpha=0.1)
+ax[2,2].plot(predictions_svr,predictions_svr, linestyle='--', color='red')
+ax[2,2].set_title(f"SVR model\n Fitted and predicted in {svr_time} secs")
+ax[2,2].set_xlabel('Actual RUL')
+ax[2,2].set_ylabel('Predicted RUL')
 
 plt.tight_layout()
 plt.show()
