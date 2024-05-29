@@ -1,160 +1,248 @@
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+import os
+
 import seaborn as sns
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
+import matplotlib.pyplot as plt
+import time
+import winsound
+
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error, mean_absolute_percentage_error
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import VarianceThreshold
+
 from sklearn.svm import SVR
 
-def transformData(data):
-    df = pd.read_csv(data, header=None, delim_whitespace=' ')
-    header = ['unit_number','time_in_cycles','setting1','setting2','setting3',
-                's01','s02','s03','s04','s05','s06','s07','s08','s09','s10','s11','s12','s13',
-                's14','s15','s16','s17','s18','s19','s20','s21']
-    df.columns = header
+pd.set_option('display.max_columns', None)  # or 1000
+pd.set_option('display.max_rows', None)  # or 1000
+pd.set_option('display.max_colwidth', None)  # or 199
 
-    # Removes settings and NaN correlated features
-    df = df.drop(columns=['setting1', 'setting2', 'setting3', 's01', 
-                     's05', 's10', 's16', 's18', 's19'])
-
-    # Finding the end of life of each engine unit
-    EOL = []
-    for i in df['unit_number']:
-        EOL.append(((df[df['unit_number'] == i]['time_in_cycles']).values)[-1])
-
-    df["EOL"] = EOL
-
-    # Calculate "LR"
-    df["LR"] = df["time_in_cycles"].div(df["EOL"])
-
-    # Create 'label' column
-    bins = [0, 0.6, 0.8, np.inf]
-    labels = [0, 1, 2]
-    df['label'] = pd.cut(df['LR'], bins=bins, labels=labels, right=False)
-
-    # Drop unnecessary columns
-    df.drop(columns=['unit_number', 'EOL', 'LR'], inplace=True)
-
-    X_train = df.drop(["label"], axis=1).values
-    y_train = df["label"]
-
-    return X_train, y_train
-
-def score_func(y_true,y_pred):
-    """
-    model evaluation function
-    
-    Args:
-        y_true = true target RUL value
-        y_pred = predicted target RUL value
-    """
+def score_func_and_save(y_true, y_pred, setName): 
     mae = mean_absolute_error(y_true, y_pred)
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     r2 = r2_score(y_true, y_pred)
-    score_list = [round(mae, 2), round(rmse, 2), round(r2, 2)]
+    mape = mean_absolute_percentage_error(y_true, y_pred)
+    score_list = [round(mae, 2), round(rmse, 2), round(r2, 2), round(mape, 2)]
     # printing metrics
+    print('{}\n' .format(setName))
     print(f' Mean Absolute Error (MAE): {score_list[0]}')
     print(f' Root Mean Squared Error (RMSE): {score_list[1]}')
     print(f' R2 Score: {score_list[2]}')
+    print(f' Mean Absolute Percentage Error: {score_list[3]}')
     print("<)-------------X-------------(>")
+    print("Scores written to SVR_data/svr_scores_{}.txt".format(setName))
 
-def importRUL(rul):
-    RUL = pd.read_csv(rul, header=None, delim_whitespace=' ')
-    header = ['remaining_useful_lifetime']
-    RUL.columns = header
-    RUL = RUL.values
+    with open('SVR_data/svr_scores_{}.txt'.format(setName),'w') as f:
+        f.write('{}\n' .format(setName))
+        f.write(f'Mean Absolute Error (MAE): {round(mae, 2)}\n')
+        f.write(f'Root Mean Squared Error (RMSE): {round(rmse, 2)}\n')
+        f.write(f'R2 Score: {round(r2, 2)}\n')
+        f.write(f'Mean Absolute Percentage Error: {round(mape, 2)}\n')
+        f.write("<)-------------X-------------(>")
+
+
+def importData(set):
+    Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
+               "sensor measurement 1", "sensor measurement 2", "sensor measurement 3", "sensor measurement 4",
+                 "sensor measurement 5","sensor measurement 6", "sensor measurement 7", "sensor measurement 8", "sensor measurement 9",
+                "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
+                "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
+                "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
+    data = pd.read_csv("{}" .format(set), header=None, delim_whitespace=True)
+    data.columns = Header
+    return data
+
+def get_RUL_column(df):
+    grouped_by_unit = df.groupby(by='unit number') 
+    max_time = grouped_by_unit['time, in cycles'].max()
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
+    RUL = merged["max_time"] - merged['time, in cycles']
     return RUL
 
-def checkCorr(df):
-    corr = df.corr()
+def get_RUL_column_test(df,RUL_np):
+    grouped_by_unit = df.groupby(by='unit number') 
+    max_time = grouped_by_unit['time, in cycles'].max()
+    for i in range(len(max_time)):
+        max_time.iloc[i]=max_time.iloc[i]+RUL_np[i]
+    merged = df.merge(max_time.to_frame(name='max_time'), left_on='unit number',right_index=True)
+    RUL = merged["max_time"] - merged['time, in cycles']
+    return RUL
 
-    #Drop columns with low or NaN correlation
-    # Set threshold for highly correlated features
-    threshold = 0.7
+def plot_heatmap(cv_results):
+    # Filter the DataFrame based on the gamma type
+    auto = cv_results[cv_results['param_gamma'] == 'auto']
+    scale = cv_results[cv_results['param_gamma'] == 'scale']
 
-    # Find pairs of highly correlated features
-    highly_correlated = (corr.abs() > threshold) & (corr.abs() < 1.0)
+    # Pivot the DataFrame
+    pivot_auto = auto.pivot('param_C', 'param_epsilon', 'mean_test_score')
+    pivot_scale = scale.pivot('param_C', 'param_epsilon', 'mean_test_score')
 
-    # Get indices of highly correlated features
-    correlated_indices = pd.DataFrame(highly_correlated.unstack())
-    correlated_indices = correlated_indices[correlated_indices[0]].index.tolist()
+    # Create the heatmap
+    fig, axs = plt.subplots(1, 2,figsize=(20, 10))
+        
+    # Plot the first heatmap
+    sns.heatmap(pivot_auto, annot=True, fmt=".3f", linewidths=.5, ax=axs[0], cmap='viridis')
+    axs[0].set_title(f'$\gamma$ = "auto"')
+    axs[0].set_xlabel(r'$\epsilon$-value')
+    axs[0].set_ylabel('C')
 
-    # Remove duplicates and self-correlations
-    correlated_indices = set([(i[0], i[1]) if i[0] < i[1] 
-                            else 
-                            (i[1], i[0]) for i in correlated_indices])
+    # Plot the second heatmap
+    sns.heatmap(pivot_scale, annot=True, fmt=".3f", linewidths=.5, ax=axs[1], cmap='viridis')
+    axs[1].set_title(f'$\gamma$ = "scale"')
+    axs[1].set_xlabel(r'$\epsilon$-value')
+    axs[1].set_ylabel('C')
 
-    # Identify features to remove (optional)
-    features_to_remove = [feat[1] for feat in correlated_indices]
+    # Adjust layout to prevent overlap
+    fig.suptitle(f'GridSearchCV mean $R^2$ score')
+    plt.tight_layout()
+    plt.show()
 
-    # Remove features from the dataset (optional)
-    df = df.drop(columns=features_to_remove)
-    return df, features_to_remove
 
-set_number = 'FD001'
+data = importData("Data/train_FD003.txt")
+test = importData("Data/test_FD003.txt")
+end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory
 
-# Define the filenames and function calls using string formatting
-rul_filename = f'RUL_{set_number}.txt'
-train_filename = f'train_{set_number}.txt'
-test_filename = f'test_{set_number}.txt'
+RUL = get_RUL_column(data)
+RUL_test = get_RUL_column_test(test,end)
 
-# Call importRUL function with dynamically constructed filename
-y_true = importRUL(rul_filename)
+data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
 
-# Call transformData function with dynamically constructed filenames
-X, y = transformData(train_filename)
-X_test, y_test = transformData(test_filename)
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
 
-# Removing features with high correlation
-X = pd.DataFrame(X)
-X, features_to_remove = checkCorr(X)
-X_test = pd.DataFrame(X_test)
-X_test = X_test.drop(columns=features_to_remove)
+scaler = MinMaxScaler()
+data_scaled = scaler.fit_transform(data) #scaling the data to use for variance
 
-X_train_def, X_val_def, y_train_def, y_val_def = train_test_split(X, y, test_size=0.3, random_state=42)
+var_thresh = VarianceThreshold(threshold=0.01)
+var_thresh.fit(data_scaled)
+#at threshold 0.01 removes: operational setting 3, sensor measurement 1,5,8,9,13,14,16,18,19
 
-#scaler = StandardScaler()
-#X_train_def_scaled = scaler.fit_transform(X_train_def)
-#X_val_def_scaled = scaler.transform(X_val_def)
-#X_test_scaled = scaler.transform(X_test)
+data = data.loc[:, var_thresh.get_support()] #removing the columns with low variance for both the unscaled and scaled set
 
-# Initialize the SVR model
-model = SVR(kernel='rbf')  # You can specify other kernels like 'linear', 'poly', 'sigmoid', etc.
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
 
-# Define the parameter grid
-param_grid = {
-    'kernel': ['linear', 'poly', 'rbf'],
-    'C': [0.1, 1, 10],
-    'gamma': ['scale', 'auto']
-}
+relation_to_RUL=correlation.iloc[:,-1] #correlation to target
 
-# Create the GridSearchCV object
-grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
+to_drop = []
+for index, value in relation_to_RUL.items(): #loop which finds the columns with low correlation to the target
+    if abs(value) < 0.1:
+        to_drop.append(index)
+data=data.drop(to_drop, axis=1) #removing the columns with low correlation to the target
 
-# Fit the GridSearchCV object to the data
-grid_search.fit(X_train_def, y_train_def)
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
 
-# Access the best model and its parameters
-best_svr = grid_search.best_estimator_
-best_params = grid_search.best_params_
-best_score = grid_search.best_score_
+high_corr_indices = [] #finding the columns with high correlation to each other
+for i in range(len(correlation)):
+    for j in range(i+1, len(correlation)):
+        if abs(correlation.iloc[i, j]) > 0.9:
+            high_corr_indices.append((i, j))
+            
+print(high_corr_indices) #inspecting to find out which ones to remove
 
-print("Best Parameters:", best_params)
-print("Best Score (Negative MSE):", best_score)
+data=data.drop("sensor measurement 7", axis=1) #removing the columns with low correlation to the target
+new_scaler = MinMaxScaler()
 
-# Fit the SVR model to the training data
-model.fit(X_train_def, y_train_def)
+scaled_data = new_scaler.fit_transform(data)
 
-# Predict the target variable on the validation set
-y_val_pred = model.predict(X_val_def)
+dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
+correlation = dummy_set.corr() #correlation matrix
+plt.figure(figsize=(10,6))
+sns.heatmap(correlation, annot=True)
+plt.show()
 
-print('Validation score:')
-score_func(y_val_def, y_val_pred)
+test = test.loc[:,data.columns]
+test_scaled = new_scaler.transform(test)
 
-# Predict the target variable on the test set
-y_pred = model.predict(X_test)
+print(data.columns)#the columns left that can be copied into tuning codes
 
-print('Test score:')
-score_func(y_pred, y_test)
+# Splitting train data into train and validation set
+X_train, X_val, y_train, y_val = train_test_split(data, RUL, test_size=0.25, random_state=42)
+
+# Defining the model using typical parameters.
+#model = SVR(kernel='rbf', C=1000, gamma="scale", epsilon=0.5)
+
+# Defining model using optimized hyperparameters
+model = SVR(kernel='rbf', C=1000000, gamma="scale", epsilon=50)
+
+print("Training the model\n")
+
+model.fit(X_train, y_train)
+
+# Using model to predict RUL
+train_predict = model.predict(X_train)
+
+#val_predict = model.predict(X_val)
+
+test_predict = model.predict(test)
+
+print("Target predicted\n")
+
+print(score_func_and_save(y_train, train_predict, 'Training scores'))
+
+print(score_func_and_save(RUL_test, test_predict, 'Test scores'))
+
+## Performing GridSearchCV on SVR model
+#param_grid = {
+#    'C': [0.1, 1, 10, 100, 1000, 10000, 100000, 1000000],
+#    'epsilon': [0.1, 0.5, 1, 5, 10, 50, 100],
+#    'kernel': ['rbf'],
+#    'gamma': ['scale', 'auto']
+#}
+#svr = SVR()
+#
+#print("Performing GridSearchCV")
+#
+#grid_search = GridSearchCV(estimator=svr, param_grid=param_grid, cv=5, scoring='r2', n_jobs=14, verbose=2)
+#
+#grid_search.fit(X_train, y_train)
+#
+#print("GridSearchCV finished")
+#
+#best_model = grid_search.best_estimator_
+#
+#gscvTrain_predict = best_model.predict(X_train)
+#
+#gscvVal_predict = best_model.predict(X_val)
+#
+#gscvTest_predict = best_model.predict(test)
+
+#print("Grid search training score")
+#print(score_func(y_train, gscvTrain_predict))
+#
+#
+#print("Grid search test score")
+#print(score_func(RUL_test, gscvTest_predict))
+
+#Notification sound for finished GridSearchCV
+#winsound.Beep(2000, 1000)
+
+# Saves the best hyperparameters of the GridSearchCV to a .txt file.
+#best_params = grid_search.best_params_
+#file_path = os.path.join('SVR_data', 'best_params.txt')
+#with open(file_path, 'w') as f:
+#    for param, value in best_params.items():
+#        f.write(f"{param}: {value}\n")
+
+
+# Saves the results of the GridSearchCV to a csv file.
+#results = pd.DataFrame(grid_search.cv_results_)
+#results = results.sort_values("rank_test_score")
+#results = results.to_csv("SVR_data/cv_results.csv", sep=',', index=False)
+
+cv_results = pd.read_csv("SVR_data/cv_results.csv")
+plot_heatmap(cv_results)
