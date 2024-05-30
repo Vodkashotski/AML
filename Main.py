@@ -18,34 +18,13 @@ import time
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn import tree
+from sklearn.svm import SVR
 
 
 pd.set_option('display.max_columns', None)  # or 1000
 pd.set_option('display.max_rows', None)  # or 1000
 pd.set_option('display.max_colwidth', None)  # or 199
 
-def score_func(y_true,y_pred):
-    """
-    !might be flawed
-    model evaluation function
-    
-    Args:
-        y_true = true target RUL value
-        y_pred = predicted target RUL value
-    """
-    
-    mae = mean_absolute_error(y_true, y_pred)
-    rmse = mean_squared_error(y_true, y_pred, squared=False)
-    r2 = r2_score(y_true, y_pred)
-    accuracy = accuracy_score(y_true, y_pred)
-    report = classification_report(y_true, y_pred)
-    score_list = [round(mae, 2), round(rmse, 2), round(r2, 2)]
-    # printing metrics
-    print("Classification Report:\n", report)
-    print(f' Mean Absolute Error (MAE): {score_list[0]}')
-    print(f' Root Mean Squared Error (RMSE): {score_list[1]}')
-    print(f' R2 Score: {score_list[2]}')
-    print("<)-------------X-------------(>")
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -152,15 +131,12 @@ predictions_rf = rf.predict(test)
 end = time.time()
 rf_time = round(end-start,2)
 
-fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
-ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
-ax[1,1].set_xlabel('Actual RUL')
-ax[1,1].set_ylabel('Predicted RUL')
-
-plt.tight_layout()
-plt.show()
+svr = SVR(kernel='rbf', C=1000000, gamma="scale", epsilon=50)
+start = time.time()
+svr.fit(data, RUL)
+predictions_svr = svr.predict(test)
+end = time.time()
+svr_time = round(end-start,2)
 
 clf = tree.DecisionTreeRegressor(min_samples_split= 21, max_depth= 10) #set params to the best peforming
 start = time.time()
@@ -170,17 +146,23 @@ end = time.time()
 clf_time = round(end-start,2)
 
 fig, ax = plt.subplots(2,2, figsize=(10,10))
-ax[1,2].scatter(RUL_test, predictions_clf, alpha=0.1)
-ax[1,2].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,2].set_title(f"RF model\n Fitted and predicted in {clf_time} secs")
-ax[1,2].set_xlabel('Actual RUL')
-ax[1,2].set_ylabel('Predicted RUL')
+ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
+ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
+ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_xlabel('Actual RUL')
+ax[1,1].set_ylabel('Predicted RUL')
 
 ax[1,0].scatter(RUL_test, predictions_clf, alpha=0.1)
 ax[1,0].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
 ax[1,0].set_title(f"Decision tree model\n Fitted and predicted in {clf_time} secs")
 ax[1,0].set_xlabel('Actual RUL')
 ax[1,0].set_ylabel('Predicted RUL')
+
+ax[0,1].scatter(RUL_test, predictions_svr, alpha=0.1)
+ax[0,1].plot(predictions_svr,predictions_svr, linestyle='--', color='red')
+ax[0,1].set_title(f"SVR model\n Fitted and predicted in {svr_time} secs")
+ax[0,1].set_xlabel('Actual RUL')
+ax[0,1].set_ylabel('Predicted RUL')
 
 plt.tight_layout()
 plt.show()
