@@ -54,7 +54,8 @@ remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
        'sensor measurement 11', 'sensor measurement 12',
        'sensor measurement 17'] #taken from preprocessing script in Main.py
 #found using feature importance
-non_sign_feat = ['sensor measurement 10','sensor measurement 3','sensor measurement 2']
+non_sign_feat = ['sensor measurement 10','sensor measurement 3',
+                 'sensor measurement 2', 'sensor measurement 17']
 df = df[remaining] #constrict the dataframe
 df.drop(non_sign_feat, axis='columns',inplace=True)
 X_train, X_test, y_train, y_test=train_test_split(df, RUL, test_size=0.2, random_state=42) #make a test train split using random state 42 for consistency
@@ -78,11 +79,12 @@ scores.plot(x='param_max_depth', y='mean_test_score', yerr='std_test_score', ax=
 plt.tick_params(axis='x', labelsize=20)
 plt.tick_params(axis='y', labelsize=20)
 plt.xlabel('max_depth with subsplits of min_samp_split', fontsize=26)
+plt.ylabel('Score', fontsize=26)
 plt.legend(fontsize=18)
 
 # plt.show()
 
-dtr = tree.DecisionTreeRegressor(min_samples_split= 71, max_depth= 9) #set params to the best peforming
+dtr = tree.DecisionTreeRegressor(min_samples_split= 111, max_depth= 11) #set params to the best peforming
 
 dtr.fit(X_train, y_train)
 
@@ -104,17 +106,18 @@ print('Cross val score:\n',cross_val_score(dtr, df, RUL, cv=5, n_jobs=-1), "\n")
 test = test.loc[:,df.columns]
 y_pred = dtr.predict(test)
 print("Test scores:")
-print("R2 Score: {:.3f}" .format(r2_score(y_pred, RUL_test)))
-print("RMS Error: {:.3f}".format(sklearn.metrics.mean_squared_error(y_pred, RUL_test)))
-print("Mean Absolute Error: {:.3f}".format(sklearn.metrics.mean_absolute_error(y_pred, RUL_test)))
-print("Mean Absolute Percentage Error: {:.3f}% \n".format(sklearn.metrics.mean_absolute_percentage_error(y_pred,RUL_test) * 100))
+print("R2 Score: {:.2f}" .format(r2_score(y_pred, RUL_test)))
+print("RMS Error: {:.2f}".format(sklearn.metrics.mean_squared_error(y_pred, RUL_test)))
+print("Mean Absolute Error: {:.2f}".format(sklearn.metrics.mean_absolute_error(y_pred, RUL_test)))
+print("Mean Absolute Percentage Error: {:.2f} \n".format(sklearn.metrics.mean_absolute_percentage_error(y_pred,RUL_test) ))
 
 y_pred_train = dtr.predict(df)
 print("Train scores:")
-print("R2 Score: {:.3f}" .format(r2_score(y_pred_train, RUL)))
-print("RMS Error: {:.3f}".format(sklearn.metrics.mean_squared_error(y_pred_train, RUL)))
-print("Mean Absolute Error: {:.3f}".format(sklearn.metrics.mean_absolute_error(y_pred_train, RUL)))
-print("Mean Absolute Percentage Error: {:.3f}%".format(sklearn.metrics.mean_absolute_percentage_error(y_pred_train,RUL) * 100))
+print("R2 Score: {:.2f}" .format(r2_score(y_pred_train, RUL)))
+print("RMS Error: {:.2f}".format(sklearn.metrics.mean_squared_error(y_pred_train, RUL)))
+print("Mean Absolute Error: {:.2f}".format(sklearn.metrics.mean_absolute_error(y_pred_train, RUL)))
+print("Mean Absolute Percentage Error: {:.2f}".format(sklearn.metrics.mean_absolute_percentage_error(y_pred_train,RUL) ))
+
 
 
 
