@@ -6,11 +6,6 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
 import time
@@ -19,6 +14,7 @@ import time
 from sklearn.ensemble import RandomForestRegressor
 from sklearn import tree
 from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsRegressor
 
 
 pd.set_option('display.max_columns', None)  # or 1000
@@ -145,6 +141,14 @@ predictions_clf = clf.predict(test)
 end = time.time()
 clf_time = round(end-start,2)
 
+kn = KNeighborsRegressor(n_neighbors=37)
+start = time.time()
+kn.fit(data, RUL)
+predictions_kn = kn.predict(test)
+end = time.time()
+kn_time = round(end-start,2)
+
+
 fig, ax = plt.subplots(2,2, figsize=(10,10))
 ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
 ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
@@ -163,6 +167,12 @@ ax[0,1].plot(predictions_svr,predictions_svr, linestyle='--', color='red')
 ax[0,1].set_title(f"SVR model\n Fitted and predicted in {svr_time} secs")
 ax[0,1].set_xlabel('Actual RUL')
 ax[0,1].set_ylabel('Predicted RUL')
+
+ax[0,0].scatter(RUL_test, predictions_kn, alpha=0.1)
+ax[0,0].plot(predictions_kn,predictions_kn, linestyle='--', color='red')
+ax[0,0].set_title(f"Linear K-neighbours model\n Fitted and predicted in {kn_time} secs")
+ax[0,0].set_xlabel('Actual RUL')
+ax[0,0].set_ylabel('Predicted RUL')
 
 plt.tight_layout()
 plt.show()
