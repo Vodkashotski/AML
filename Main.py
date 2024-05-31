@@ -149,28 +149,28 @@ end = time.time()
 kn_time = round(end-start,2)
 
 
-fig, ax = plt.subplots(2,2, figsize=(10,10))
+fig, ax = plt.subplots(2,2, figsize=(7,7))
 ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
 ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
-ax[1,1].set_title(f"RF model\n Fitted and predicted in {rf_time} secs")
+ax[1,1].set_title(f"RF model: Fitted and predicted in {rf_time} secs")
 ax[1,1].set_xlabel('Actual RUL')
 ax[1,1].set_ylabel('Predicted RUL')
 
 ax[1,0].scatter(RUL_test, predictions_clf, alpha=0.1)
 ax[1,0].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,0].set_title(f"Decision tree model\n Fitted and predicted in {clf_time} secs")
+ax[1,0].set_title(f"Decision tree model: Fitted and predicted in {clf_time} secs")
 ax[1,0].set_xlabel('Actual RUL')
 ax[1,0].set_ylabel('Predicted RUL')
 
 ax[0,1].scatter(RUL_test, predictions_svr, alpha=0.1)
 ax[0,1].plot(predictions_svr,predictions_svr, linestyle='--', color='red')
-ax[0,1].set_title(f"SVR model\n Fitted and predicted in {svr_time} secs")
+ax[0,1].set_title(f"SVR model: Fitted and predicted in {svr_time} secs")
 ax[0,1].set_xlabel('Actual RUL')
 ax[0,1].set_ylabel('Predicted RUL')
 
 ax[0,0].scatter(RUL_test, predictions_kn, alpha=0.1)
 ax[0,0].plot(predictions_kn,predictions_kn, linestyle='--', color='red')
-ax[0,0].set_title(f"Linear K-neighbours model\n Fitted and predicted in {kn_time} secs")
+ax[0,0].set_title(f"Linear model: Fitted and predicted in {kn_time} secs")
 ax[0,0].set_xlabel('Actual RUL')
 ax[0,0].set_ylabel('Predicted RUL')
 
