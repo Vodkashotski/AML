@@ -134,7 +134,7 @@ predictions_svr = svr.predict(test)
 end = time.time()
 svr_time = round(end-start,2)
 
-clf = tree.DecisionTreeRegressor(min_samples_split= 21, max_depth= 10) #set params to the best peforming
+clf = tree.DecisionTreeRegressor(min_samples_split= 91, max_depth= 9) #set params to the best peforming
 start = time.time()
 clf.fit(data, RUL)
 predictions_clf = clf.predict(test)
