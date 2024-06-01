@@ -5,7 +5,7 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 import time
-import winsound
+#import winsound
 
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
@@ -68,69 +68,17 @@ end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_n
 RUL = get_RUL_column(data)
 RUL_test = get_RUL_column_test(test,end)
 
-data = data.drop(["unit number"], axis=1) #Effectively just a name so can't enter into the regression
+remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
+       'sensor measurement 4', 'sensor measurement 6', 'sensor measurement 10', 'sensor measurement 11', 'sensor measurement 12',
+       'sensor measurement 17'] #taken from preprocessing
 
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
+train = data[remaining]
+test = test[remaining]
 
-scaler = MinMaxScaler()
-data_scaled = scaler.fit_transform(data) #scaling the data to use for variance
-
-var_thresh = VarianceThreshold(threshold=0.01)
-var_thresh.fit(data_scaled)
-#at threshold 0.01 removes: operational setting 3, sensor measurement 1,5,8,9,13,14,16,18,19
-
-data = data.loc[:, var_thresh.get_support()] #removing the columns with low variance for both the unscaled and scaled set
-
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
-
-relation_to_RUL=correlation.iloc[:,-1] #correlation to target
-
-to_drop = []
-for index, value in relation_to_RUL.items(): #loop which finds the columns with low correlation to the target
-    if abs(value) < 0.1:
-        to_drop.append(index)
-data=data.drop(to_drop, axis=1) #removing the columns with low correlation to the target
-
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
-
-high_corr_indices = [] #finding the columns with high correlation to each other
-for i in range(len(correlation)):
-    for j in range(i+1, len(correlation)):
-        if abs(correlation.iloc[i, j]) > 0.9:
-            high_corr_indices.append((i, j))
-            
-print(high_corr_indices) #inspecting to find out which ones to remove
-
-data=data.drop("sensor measurement 7", axis=1) #removing the columns with low correlation to the target
 new_scaler = MinMaxScaler()
 
 scaled_data = new_scaler.fit_transform(data)
-
-dummy_set = data.merge(RUL.to_frame(name='RUL'), left_on=data.columns[0],right_index=True) #making set so RUL can be in the corr matrix
-correlation = dummy_set.corr() #correlation matrix
-plt.figure(figsize=(10,6))
-sns.heatmap(correlation, annot=True)
-plt.show()
-
-test = test.loc[:,data.columns]
 test_scaled = new_scaler.transform(test)
-
-print(data.columns)#the columns left that can be copied into tuning codes
-
-# Splitting train data into train and validation set
-#X_train, X_val, y_train, y_val = train_test_split(scaled_data, RUL, test_size=0.25, random_state=42)
 
 model = KNeighborsRegressor(n_neighbors=37, n_jobs=-1)
 
