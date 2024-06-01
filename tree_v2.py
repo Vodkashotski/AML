@@ -100,7 +100,7 @@ plt.figure(1)
 plt.barh(range(np.size(feat_importance)), feat_importance)
 plt.yticks(range(np.size(feat_importance)),df.columns.tolist()[0:np.size(feat_importance)])
 plt.title("Feature importance for Decision tree")
-plt.show()
+# plt.show()
 
 print('Cross val score:\n',cross_val_score(dtr, df, RUL, cv=5, n_jobs=-1), "\n") #doing cross val to see how well the tree works with the dataframe
 
