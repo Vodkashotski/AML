@@ -5,7 +5,7 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 import time
-#import winsound
+import winsound
 
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
@@ -61,9 +61,9 @@ def score_func(y_true, y_pred, setName):
     print(f' Mean Absolute Percentage Error: {score_list[3]}')
     print("<)-------------X-------------(>")
 
-data = importData("Data/train_FD003.txt")
-test = importData("Data/test_FD003.txt")
-end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory
+data = importData("Data\train_FD003.txt")
+test = importData("Data\test_FD003.txt")
+end = pd.read_csv("Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory
 
 RUL = get_RUL_column(data)
 RUL_test = get_RUL_column_test(test,end)
@@ -77,7 +77,7 @@ test = test[remaining]
 
 new_scaler = MinMaxScaler()
 
-scaled_data = new_scaler.fit_transform(data)
+scaled_data = new_scaler.fit_transform(train)
 test_scaled = new_scaler.transform(test)
 
 model = KNeighborsRegressor(n_neighbors=37, n_jobs=-1)
