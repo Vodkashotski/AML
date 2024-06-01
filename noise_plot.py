@@ -23,14 +23,14 @@ data_filtered = data[data['unit number'].isin(units_to_plot)]
 
 grouped_data_filtered = data_filtered.groupby('unit number')
 
-plt.figure(figsize=(12,6))
+plt.figure(figsize=(8,6))
 
 for unit_number, group in grouped_data_filtered:
     plt.plot(group['time, in cycles'], group['sensor measurement 11'], label=f'Unit {unit_number}')
 
-plt.xlabel('Time in cycles')
-plt.ylabel('HPC outlet static pressure (psia)')
-plt.title('Sensor Measurement 11')
-plt.legend()
+plt.xlabel('Time in cycles', fontsize = 14)
+plt.ylabel('HPC outlet static pressure (psia)', fontsize = 14)
+plt.title('Sensor Measurement 11', fontsize = 14)
+plt.legend(fontsize = 14)
 plt.show()
 
