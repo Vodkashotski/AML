@@ -157,10 +157,10 @@ predictions_train = rf.predict(train)
 predictions_test = rf.predict(test)
 
 r2_train = r2_score(RUL, predictions_train)
-RSME_train = math.sqrt(mean_squared_error(RUL, predictions_train))
+RSME_train = mean_squared_error(RUL, predictions_train, squared=False)
 
 r2_test = r2_score(RUL_test, predictions_test)
-RSME_test = math.sqrt(mean_squared_error(RUL_test, predictions_test))
+RSME_test = mean_squared_error(RUL_test, predictions_test, squared=False)
 
 print("Untuned train R2 score: ", r2_train)
 print("Untuned train RSME score: ", RSME_train)
