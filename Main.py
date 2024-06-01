@@ -29,7 +29,7 @@ def importData(set):
                 "sensor measurement 10", "sensor measurement 11", "sensor measurement 12", "sensor measurement 13",
                 "sensor measurement 14", "sensor measurement 15", "sensor measurement 16", "sensor measurement 17",
                 "sensor measurement 18", "sensor measurement 19", "sensor measurement 20", "sensor measurement 21"]
-    data = pd.read_csv("Data\{}" .format(set), header=None, delim_whitespace=True)
+    data = pd.read_csv("Data/{}" .format(set), header=None, delim_whitespace=True)
     data.columns = Header
     return data
 
@@ -52,7 +52,7 @@ def get_RUL_column_test(df,RUL_np): #function which makes a RUL column based on 
 
 data = importData("train_FD003.txt") #importing the main data
 test = importData("test_FD003.txt")  #importing the other data
-end = pd.read_csv("Data\RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
+end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_numpy() #Importing the RUL values for the test set at ended trajectory¢
 
 RUL = get_RUL_column(data) #making the RL columns
 RUL_test = get_RUL_column_test(test,end)
@@ -151,14 +151,14 @@ kn_time = round(end-start,2)
 
 fig, ax = plt.subplots(2,2, figsize=(7,7))
 ax[1,1].scatter(RUL_test, predictions_rf, alpha=0.1)
-ax[1,1].plot(predictions_rf,predictions_rf, linestyle='--', color='red')
+ax[1,1].plot(RUL_test,RUL_test, linestyle='--', color='red')
 ax[1,1].set_title(f"RF model: Fitted and predicted in {rf_time} secs")
 ax[1,1].set_xlabel('Actual RUL')
 ax[1,1].set_ylabel('Predicted RUL')
 
 ax[1,0].scatter(RUL_test, predictions_clf, alpha=0.1)
 ax[1,0].plot(predictions_clf,predictions_clf, linestyle='--', color='red')
-ax[1,0].set_title(f"Decision tree model: Fitted and predicted in {clf_time} secs")
+ax[1,0].set_title(f"DT model: Fitted and predicted in {clf_time} secs")
 ax[1,0].set_xlabel('Actual RUL')
 ax[1,0].set_ylabel('Predicted RUL')
 
@@ -170,7 +170,7 @@ ax[0,1].set_ylabel('Predicted RUL')
 
 ax[0,0].scatter(RUL_test, predictions_kn, alpha=0.1)
 ax[0,0].plot(predictions_kn,predictions_kn, linestyle='--', color='red')
-ax[0,0].set_title(f"Linear model: Fitted and predicted in {kn_time} secs")
+ax[0,0].set_title(f"Linear KN model: Fitted and predicted in {kn_time} secs")
 ax[0,0].set_xlabel('Actual RUL')
 ax[0,0].set_ylabel('Predicted RUL')
 

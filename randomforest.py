@@ -11,8 +11,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.metrics import mean_absolute_error
 
-import math
-
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -177,12 +175,12 @@ predictions_train = rf.predict(train)
 predictions_test = rf.predict(test)
 
 r2_train = r2_score(RUL, predictions_train)
-RSME_train = math.sqrt(mean_squared_error(RUL, predictions_train))
+RSME_train = rmse = mean_squared_error(RUL, predictions_train, squared=False)
 MAPE_train = mean_absolute_percentage_error(RUL, predictions_train)
 MAE_train = mean_absolute_error(RUL, predictions_train)
 
 r2_test = r2_score(RUL_test, predictions_test)
-RSME_test = math.sqrt(mean_squared_error(RUL_test, predictions_test))
+RSME_test = mean_squared_error(RUL_test, predictions_test, squared=False)
 MAPE_test = mean_absolute_percentage_error(RUL_test, predictions_test)
 MAE_test = mean_absolute_error(RUL_test, predictions_test)
 
