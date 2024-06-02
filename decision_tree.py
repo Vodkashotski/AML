@@ -1,10 +1,9 @@
-from matplotlib.pylab import rand
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import sklearn
-from sklearn.metrics import r2_score
 import sklearn.metrics
+from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
@@ -54,15 +53,10 @@ remaining = ['time, in cycles', 'sensor measurement 2', 'sensor measurement 3',
        'sensor measurement 11', 'sensor measurement 12',
        'sensor measurement 17'] #taken from preprocessing script in Main.py
 
-#found using feature importance
-# non_sign_feat = ['sensor measurement 10','sensor measurement 3',
-                #  'sensor measurement 2', 'sensor measurement 17']
-
 df = df[remaining] #constrict the dataframe
 
-# df.drop('unit number', axis='columns', inplace=True)
+# df.drop('unit number', axis='columns', inplace=True) #used for testing purposes
 
-# df.drop(non_sign_feat, axis='columns',inplace=True)
 X_train, X_test, y_train, y_test=train_test_split(df, RUL, test_size=0.2, random_state=42) #make a test train split using random state 42 for consistency
 
 print(f"Dimension of feature matrix : {X_train.shape}\n Dimension of target vector: {y_train.shape}") #Check shapes for good measure
@@ -78,6 +72,7 @@ print("\n The best estimator across ALL searched params:\n",grid.best_estimator_
 print("\n The best score across ALL searched params:\n",grid.best_score_)
 print("\n The best parameters across ALL searched params:\n",grid.best_params_, "\n")
 
+#grid search plot
 plt.figure(0)
 scores.plot(x='param_max_depth', y='mean_train_score', yerr='std_train_score', ax=plt.gca(), figsize=(20,8))
 scores.plot(x='param_max_depth', y='mean_test_score', yerr='std_test_score', ax=plt.gca(), figsize=(20,8))
@@ -86,8 +81,7 @@ plt.tick_params(axis='y', labelsize=20)
 plt.xlabel('max_depth with subsplits of min_samp_split', fontsize=26)
 plt.ylabel('Score', fontsize=26)
 plt.legend(fontsize=18)
-
-# plt.show()
+plt.show()
 
 dtr = tree.DecisionTreeRegressor(min_samples_split= 91, max_depth= 9) #set params to the best peforming
 
@@ -100,7 +94,7 @@ plt.figure(1)
 plt.barh(range(np.size(feat_importance)), feat_importance)
 plt.yticks(range(np.size(feat_importance)),df.columns.tolist()[0:np.size(feat_importance)])
 plt.title("Feature importance for Decision tree")
-# plt.show()
+plt.show()
 
 print('Cross val score:\n',cross_val_score(dtr, df, RUL, cv=5, n_jobs=-1), "\n") #doing cross val to see how well the tree works with the dataframe
 
@@ -138,4 +132,4 @@ plt.plot(predictions_dtr,predictions_dtr, linestyle='--', color='red')
 plt.title(f"Decision Tree model\n Fitted and predicted in {dtr_time} secs")
 plt.xlabel('Actual RUL')
 plt.ylabel('Predicted RUL')
-# plt.show()
+plt.show()
