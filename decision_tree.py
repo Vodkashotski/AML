@@ -117,10 +117,6 @@ print("RMS Error: {:.2f}".format(sklearn.metrics.mean_squared_error(y_pred_train
 print("Mean Absolute Error: {:.2f}".format(sklearn.metrics.mean_absolute_error(y_pred_train, RUL)))
 print("Mean Absolute Percentage Error: {:.2f}".format(sklearn.metrics.mean_absolute_percentage_error(y_pred_train,RUL) * 100 ))
 
-
-
-
-
 plt.figure(2)
 start = time.time()
 dtr.fit(df, RUL)
