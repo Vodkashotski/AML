@@ -34,3 +34,18 @@ plt.title('Sensor Measurement 11', fontsize = 14)
 plt.legend(fontsize = 14)
 plt.show()
 
+# Group by engine number and get the max cycles for each engine
+max_cycles_per_engine = data.groupby('unit number')['time, in cycles'].max().reset_index()
+
+# Rename the columns for clarity
+max_cycles_per_engine.columns = ['unit number', 'time, in cycles']
+
+plt.hist(max_cycles_per_engine['time, in cycles'], bins=10, edgecolor='black')
+
+# Customize the histogram
+plt.xlabel('Time (cycles)', fontsize=14)
+plt.ylabel('Frequency (# of units)', fontsize=14)
+plt.title('Distribution of engine lifespan', fontsize=14)
+
+# Display the histogram
+plt.show()
