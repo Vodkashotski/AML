@@ -8,12 +8,12 @@ import time
 import winsound
 
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error, mean_absolute_percentage_error
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
+from sklearn.inspection import permutation_importance
 
 from sklearn.svm import SVR
 
@@ -25,7 +25,7 @@ def score_func_and_save(y_true, y_pred, setName):
     mae = mean_absolute_error(y_true, y_pred)
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     r2 = r2_score(y_true, y_pred)
-    mape = mean_absolute_percentage_error(y_true, y_pred)
+    mape = mean_absolute_percentage_error(y_true, y_pred) * 100
     score_list = [round(mae, 2), round(rmse, 2), round(r2, 2), round(mape, 2)]
     # printing metrics
     print('{}\n' .format(setName))
@@ -186,8 +186,6 @@ model.fit(X_train, y_train)
 # Using model to predict RUL
 train_predict = model.predict(X_train)
 
-#val_predict = model.predict(X_val)
-
 test_predict = model.predict(test)
 
 print("Target predicted\n")
@@ -196,13 +194,14 @@ print(score_func_and_save(y_train, train_predict, 'Training scores'))
 
 print(score_func_and_save(RUL_test, test_predict, 'Test scores'))
 
-## Performing GridSearchCV on SVR model
+# Performing GridSearchCV on SVR model
 #param_grid = {
 #    'C': [0.1, 1, 10, 100, 1000, 10000, 100000, 1000000],
 #    'epsilon': [0.1, 0.5, 1, 5, 10, 50, 100],
 #    'kernel': ['rbf'],
 #    'gamma': ['scale', 'auto']
 #}
+
 #svr = SVR()
 #
 #print("Performing GridSearchCV")
@@ -217,19 +216,15 @@ print(score_func_and_save(RUL_test, test_predict, 'Test scores'))
 #
 #gscvTrain_predict = best_model.predict(X_train)
 #
-#gscvVal_predict = best_model.predict(X_val)
-#
 #gscvTest_predict = best_model.predict(test)
-
 #print("Grid search training score")
-#print(score_func(y_train, gscvTrain_predict))
+#print(score_func_and_save(y_train, gscvTrain_predict, 'gscv train'))
 #
 #
 #print("Grid search test score")
-#print(score_func(RUL_test, gscvTest_predict))
-
+#print(score_func_and_save(RUL_test, gscvTest_predict, 'gscv test'))
 #Notification sound for finished GridSearchCV
-#winsound.Beep(2000, 1000)
+winsound.Beep(2000, 1000)
 
 # Saves the best hyperparameters of the GridSearchCV to a .txt file.
 #best_params = grid_search.best_params_
@@ -237,7 +232,6 @@ print(score_func_and_save(RUL_test, test_predict, 'Test scores'))
 #with open(file_path, 'w') as f:
 #    for param, value in best_params.items():
 #        f.write(f"{param}: {value}\n")
-
 
 # Saves the results of the GridSearchCV to a csv file.
 #results = pd.DataFrame(grid_search.cv_results_)
