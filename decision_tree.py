@@ -106,14 +106,14 @@ test = test.loc[:,df.columns]
 y_pred = dtr.predict(test)
 print("Test scores:")
 print("R2 Score: {:.2f}" .format(r2_score(y_pred, RUL_test)))
-print("RMS Error: {:.2f}".format(sklearn.metrics.mean_squared_error(y_pred, RUL_test)))
+print("RMS Error: {:.2f}".format(np.sqrt(sklearn.metrics.mean_squared_error(y_pred, RUL_test))))
 print("Mean Absolute Error: {:.2f}".format(sklearn.metrics.mean_absolute_error(y_pred, RUL_test)))
 print("Mean Absolute Percentage Error: {:.2f} \n".format(sklearn.metrics.mean_absolute_percentage_error(y_pred,RUL_test) *100 ))
 
 y_pred_train = dtr.predict(df)
 print("Train scores:")
 print("R2 Score: {:.2f}" .format(r2_score(y_pred_train, RUL)))
-print("RMS Error: {:.2f}".format(sklearn.metrics.mean_squared_error(y_pred_train, RUL)))
+print("RMS Error: {:.2f}".format(np.sqrt(sklearn.metrics.mean_squared_error(y_pred_train, RUL))))
 print("Mean Absolute Error: {:.2f}".format(sklearn.metrics.mean_absolute_error(y_pred_train, RUL)))
 print("Mean Absolute Percentage Error: {:.2f}".format(sklearn.metrics.mean_absolute_percentage_error(y_pred_train,RUL) * 100 ))
 
