@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
@@ -11,6 +10,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.metrics import mean_absolute_error
 
+#Note that this script is not really made to run in its entirety but rather to run parts with others commented out
+#Would not recommend running with the Gridsearch or the loops for values unless you are ready to wait for a looooong time
 
 def importData(set):
     Header = ["unit number","time, in cycles", "operational setting 1", "operational setting 2", "operational setting 3",
@@ -46,13 +47,13 @@ end = pd.read_csv("Data/RUL_FD003.txt", header=None, delim_whitespace=True).to_n
 RUL = get_RUL_column(train)
 RUL_test = get_RUL_column_test(test,end)
 
-forest = RandomForestRegressor(random_state=42)
+forest = RandomForestRegressor(random_state=42) #untuned model defined to make feature importance plot
 forest.fit(train.iloc[:, 1:], RUL)
 importances = forest.feature_importances_
 std = np.std([tree.feature_importances_ for tree in forest.estimators_], axis=0)
 forest_importances = pd.Series(importances, index=train.iloc[:, 1:].columns)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots() #feature importance plot for use in discussion
 plt.bar(range(25),importances)
 plt.xticks(range(25),train.iloc[:, 1:].columns, rotation=90)
 ax.set_title("Feature importances of Random Forests")
@@ -72,84 +73,84 @@ feature_range = np.arange(1, train.shape[1]+1)
 n_estimator_range = [10, 50, 100, 250, 350, 450, 470, 490, 510, 540, 580]
 depth_range = np.arange(1, 15)
 
-#rf = RandomForestRegressor(random_state=42)
+rf = RandomForestRegressor(random_state=42)
 
-#param_grid={'n_estimators': n_estimator_range,
-            #'max_depth': depth_range,
-            #'max_features': feature_range,
-#             }
-# grid = GridSearchCV(rf, param_grid, cv=5) #grid search
+param_grid={'n_estimators': n_estimator_range,
+            'max_depth': depth_range,
+            'max_features': feature_range,
+            }
+grid = GridSearchCV(rf, param_grid, cv=5) #grid search
 
-# grid.fit(train, RUL)
-# scores = grid.cv_results_
+grid.fit(train, RUL)
+scores = grid.cv_results_
 
-# print(grid.best_params_)
-# print(grid.best_score_)
+print(grid.best_params_)
+print(grid.best_score_)
 
 #Finding scores for plots/narrowing
 
-# scores_cross = []
-# std_cross = []
-# scores_train =[]
-# std_train = []
+scores_cross = []
+std_cross = []
+scores_train =[]
+std_train = []
 
-# for j in depth_range:
-#             rf = RandomForestRegressor(max_depth=j, n_estimators=490, max_features=1, random_state=42)
-#             rf.fit(train,RUL)
-#             score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
-#             scores_cross.append(np.array(score['test_score']).mean())
-#             std_cross.append(np.array(score['test_score']).std())
-#             scores_train.append(np.array(score['train_score']).mean())
-#             std_train.append(np.array(score['train_score']).std())
+for j in depth_range:
+            rf = RandomForestRegressor(max_depth=j, n_estimators=490, max_features=1, random_state=42)
+            rf.fit(train,RUL)
+            score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
+            scores_cross.append(np.array(score['test_score']).mean())
+            std_cross.append(np.array(score['test_score']).std())
+            scores_train.append(np.array(score['train_score']).mean())
+            std_train.append(np.array(score['train_score']).std())
 
 
 # Saving the data to avoid having to run the loop every time
-# np.save("RF_data/cross_val_scores_d.npy", scores_cross)
-# np.save("RF_data/cross_val_std_d.npy", std_cross)
-# np.save("RF_data/train_std_d.npy", std_train)
-# np.save("RF_data/scores_train_d.npy", scores_train)
+np.save("RF_data/cross_val_scores_d.npy", scores_cross)
+np.save("RF_data/cross_val_std_d.npy", std_cross)
+np.save("RF_data/train_std_d.npy", std_train)
+np.save("RF_data/scores_train_d.npy", scores_train)
 
-# scores_cross = []
-# std_cross = []
-# scores_train =[]
-# std_train = []
+scores_cross = []
+std_cross = []
+scores_train =[]
+std_train = []
 
-# for j in feature_range:
-#             rf = RandomForestRegressor(n_estimators=490, max_features=j, max_depth=13, random_state=42)
-#             rf.fit(train,RUL)
-#             score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
-#             scores_cross.append(np.array(score['test_score']).mean())
-#             std_cross.append(np.array(score['test_score']).std())
-#             scores_train.append(np.array(score['train_score']).mean())
-#             std_train.append(np.array(score['train_score']).std())
+for j in feature_range:
+            rf = RandomForestRegressor(n_estimators=490, max_features=j, max_depth=13, random_state=42)
+            rf.fit(train,RUL)
+            score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
+            scores_cross.append(np.array(score['test_score']).mean())
+            std_cross.append(np.array(score['test_score']).std())
+            scores_train.append(np.array(score['train_score']).mean())
+            std_train.append(np.array(score['train_score']).std())
 
-# #Saving the data to avoid having to run the loop every time
-# np.save("RF_data/cross_val_scores.npy", scores_cross)
-# np.save("RF_data/cross_val_std.npy", std_cross)
-# np.save("RF_data/train_std.npy", std_train)
-# np.save("RF_data/scores_train.npy", scores_train)
+#Saving the data to avoid having to run the loop every time
+np.save("RF_data/cross_val_scores.npy", scores_cross)
+np.save("RF_data/cross_val_std.npy", std_cross)
+np.save("RF_data/train_std.npy", std_train)
+np.save("RF_data/scores_train.npy", scores_train)
 
-# scores_cross = []
-# std_cross = []
-# scores_train =[]
-# std_train = []
+scores_cross = []
+std_cross = []
+scores_train =[]
+std_train = []
 
-# for j in  n_estimator_range:
-#            rf = RandomForestRegressor(n_estimators=j, max_depth=13, max_features=1, random_state=42)
-#            rf.fit(train,RUL)
-#            score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
-#            scores_cross.append(np.array(score['test_score']).mean())
-#            std_cross.append(np.array(score['test_score']).std())
-#            scores_train.append(np.array(score['train_score']).mean())
-#            std_train.append(np.array(score['train_score']).std())
+for j in  n_estimator_range:
+           rf = RandomForestRegressor(n_estimators=j, max_depth=13, max_features=1, random_state=42)
+           rf.fit(train,RUL)
+           score = cross_validate(rf, train, RUL, cv=5, scoring='r2', return_train_score=True)
+           scores_cross.append(np.array(score['test_score']).mean())
+           std_cross.append(np.array(score['test_score']).std())
+           scores_train.append(np.array(score['train_score']).mean())
+           std_train.append(np.array(score['train_score']).std())
           
+#Saving the data to avoid having to run the loop every time
+np.save("RF_data/cross_val_scores_n.npy", scores_cross)
+np.save("RF_data/cross_val_std_n.npy", std_cross)
+np.save("RF_data/train_std_n.npy", std_train)
+np.save("RF_data/scores_train_n.npy", scores_train)
 
-# np.save("RF_data/cross_val_scores_n.npy", scores_cross)
-# np.save("RF_data/cross_val_std_n.npy", std_cross)
-# np.save("RF_data/train_std_n.npy", std_train)
-# np.save("RF_data/scores_train_n.npy", scores_train)
-
-# X_train, X_test, y_train, y_test=train_test_split(train, RUL, test_size=0.2, random_state=42)
+#Running an untuned model for comparison
 rf = RandomForestRegressor(random_state=42)
 rf.fit(train,RUL)
 
@@ -168,7 +169,7 @@ print("Untuned train RSME score: ", RSME_train)
 print("Untuned test R2 score: ",r2_test)
 print("Untuned test RSME score: ", RSME_test)
 
-
+#Running the tuned model
 rf = RandomForestRegressor(n_estimators=490, max_features=1, max_depth=13, random_state=42)
 rf.fit(train,RUL)
 predictions_train = rf.predict(train)

@@ -1,0 +1,6 @@
+Test scores
+Mean Absolute Error (MAE): 47.45
+Root Mean Squared Error (RMSE): 65.36
+R2 Score: 0.4
+Mean Absolute Percentage Error: 32.67
+<)-------------X-------------(>

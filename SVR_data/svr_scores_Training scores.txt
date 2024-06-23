@@ -1,0 +1,6 @@
+Training scores
+Mean Absolute Error (MAE): 44.07
+Root Mean Squared Error (RMSE): 61.41
+R2 Score: 0.61
+Mean Absolute Percentage Error: 4.134418742385148e+16
+<)-------------X-------------(>
